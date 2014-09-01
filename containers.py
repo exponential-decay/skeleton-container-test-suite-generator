@@ -2,6 +2,7 @@ import os
 import sys
 import xml.etree.ElementTree as etree
 from DroidStandardSigFileClass import DroidStandardSigFileClass
+import signature2bytegenerator
 
 def handlecreatedirectories(path):
 	pathlist = path.split('/')
@@ -70,7 +71,7 @@ try:
 		if x in puid2idmapping:		
 			fmtid = puid2idmapping[x]
 			fmt = x
-			print fmt.replace('/', '-') + '-container-signature-id-' + str(fmtid) + '.' + str(puidmapping[x])
+			#print fmt.replace('/', '-') + '-container-signature-id-' + str(fmtid) + '.' + str(puidmapping[x])
 
 	for topelements in xml_iter:
 
@@ -93,18 +94,48 @@ try:
 							handlecreatefile('files/' + innerfile.text)
 					if innerfile.tag == 'BinarySignatures':
 						sigcoll = innerfile[INTSIGCOLLECTIONOFFSET]
+
+						minoff = 0
+						maxoff = 0
+						offset = 0
+						seq = ''
 						for internalsig in sigcoll:
 							signatureiter = internalsig.iter()
 							for signaturecomponents in signatureiter:
 								if signaturecomponents.tag == 'ByteSequence':
+									offset = 0
 									offset = signaturecomponents.get('Reference')  #note: treat none as BOF
 								if signaturecomponents.tag == 'SubSequence':
+									minoff = 0
 									minoff = signaturecomponents.get('SubSeqMinOffset')
+									maxoff = 0
 									maxoff = signaturecomponents.get('SubSeqMaxOffset')
 								if signaturecomponents.tag == 'Sequence':
 									#note strange square brackets in open office sequences
-									seq = convertbytesequence(signaturecomponents.text)									
-									
+									seq = ''
+									seq = convertbytesequence(signaturecomponents.text)	
+
+								if seq != '':
+										#todo, output to file...
+									sig2map = signature2bytegenerator.Sig2ByteGenerator()	#TODO: New instance or not?
+									if offset == 'BOFoffset':
+										bytes = sig2map.map_signature(minoff, seq, 0, 0)
+									elif offset == 'EOFoffset':
+										bytes = sig2map.map_signature(0, seq, minoff, 0)
+									else:		#treat as BOF
+										bytes = sig2map.map_signature(minoff, seq, 0, 0)
+									print seq
+									print bytes
+
+									#for x in bof_sequence:
+									#	try:
+									#		s = map(ord, x.decode('hex'))
+									#		for y in s:
+									#			self.nt_file.write(chr(y))
+									#	except:
+									#		sys.stderr.write("BOF Signature not mapped: " + seq + '\n\n')
+
+
 except IOError as (errno, strerror):
 	sys.stderr.write("IO error({0}): {1}".format(errno, strerror) + '\n')
 
