@@ -36,7 +36,7 @@ def convertbytesequence(sequence):
 
 INTSIGCOLLECTIONOFFSET = 0
 
-dclass = DroidStandardSigFileClass('sig-file.xml')
+StandardSignatureHandler = DroidStandardSigFileClass('sig-file.xml')
 
 f = open('container-signature.xml', 'rb')
 
@@ -45,30 +45,32 @@ try:
 	root = tree.getroot()
 	xml_iter = iter(root)
 
-	fmtmap = {} 	#idmap
+	id2puidmapping = {} 	#idmap
 	puidmap = {}
 
-	puidlist = []
+	#list of puids in container signature file
+	containerpuidlist = []
 
 	formatmappings = root.find('FileFormatMappings')
 
 	for i, y in enumerate(formatmappings.iter()):
 		sigid = y.get('signatureId')
 		puid = y.get('Puid')				
-		fmtmap[sigid] = puid
-		puidlist.append(puid)	#len(puidlist) #one too many?
+		id2puidmapping[sigid] = puid
+		containerpuidlist.append(puid)	#len(puidlist) #one too many?
+	
+	puidmapping = StandardSignatureHandler.retrieve_ext_list(containerpuidlist)
 
-	print fmtmap
-	puidmapping = dclass.retrieve_ext_list(puidlist)
-	print len(puidmapping)
-	print puidmapping
+	# swap keys so we can access dict via puid value
+	puid2idmapping = dict((value, key) for key, value in id2puidmapping.iteritems())
 
-	#makefilenames()
-	#fmt-x-sig-id-xxxx.ext
-	#no ext in container sig file... process after std puids?-use sig file?!
-
-	#need to feed filename and id into the parsing of container signatures
-	#parse signature, read ID and filename, write file
+	#retrieve filename...
+	#fmt-x-sig-id-xxxx.ext	
+	for x in puidmapping:
+		if x in puid2idmapping:		
+			fmtid = puid2idmapping[x]
+			fmt = x
+			print fmt.replace('/', '-') + '-container-signature-id-' + str(fmtid) + '.' + str(puidmapping[x])
 
 	for topelements in xml_iter:
 
