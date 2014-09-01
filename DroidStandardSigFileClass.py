@@ -6,6 +6,7 @@ class DroidStandardSigFileClass:
 		self.sigfile = open('sig-file.xml', 'rb')
 	#def __iterate_xml__(self):
 
+	#given a puid, return an extension from droid signature file
 	def retrieve_single_ext_text(self, puidtxt):
 		xml_iter = self.__parse_xml__()
 		for topelements in xml_iter:
@@ -19,6 +20,7 @@ class DroidStandardSigFileClass:
 								return mapping.text
 								break
 
+	#given a list of puids, return all extensions from droid signature file
 	def retrieve_ext_list(self, puid_list):
 		xml_iter = self.__parse_xml__()
 		puiddict = {}
