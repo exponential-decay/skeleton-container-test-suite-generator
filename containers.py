@@ -19,6 +19,7 @@ def handlecreatefile(path):
 	skeletonfilepart.close()
 
 def convertbytesequence(sequence):
+	#source; https://gist.github.com/richardlehane/f71a0e8f15c99c805ec4 
 	#testsig = "10 00 00 00 'Word.Document.' ['6'-'7'] 00"
 	l = sequence.split("'")
 	ns = ""
@@ -34,110 +35,117 @@ def convertbytesequence(sequence):
 
 	return ns.replace(" ", "")
 
+def __parse_xml__(xmlfile):
+	f = open(xmlfile, 'rb')
+	try:
+		tree = etree.parse(f)
+		f.close()		
+		return tree.getroot()
+	except IOError as (errno, strerror):
+		sys.stderr.write("IO error({0}): {1}".format(errno, strerror) + '\n')
+		f.close()
+
 
 INTSIGCOLLECTIONOFFSET = 0
 
 StandardSignatureHandler = DroidStandardSigFileClass('sig-file.xml')
 
-f = open('container-signature.xml', 'rb')
 
-try:
-	tree = etree.parse(f)
-	root = tree.getroot()
-	xml_iter = iter(root)
+id2puidmapping = {} 	#idmap
+puidmap = {}
 
-	id2puidmapping = {} 	#idmap
-	puidmap = {}
+#list of puids in container signature file
+containerpuidlist = []
 
-	#list of puids in container signature file
-	containerpuidlist = []
+root = __parse_xml__('container-signature.xml')
+xml_iter = iter(root)
 
-	formatmappings = root.find('FileFormatMappings')
+formatmappings = root.find('FileFormatMappings')
 
-	for i, y in enumerate(formatmappings.iter()):
-		sigid = y.get('signatureId')
-		puid = y.get('Puid')				
-		id2puidmapping[sigid] = puid
-		containerpuidlist.append(puid)	#len(puidlist) #one too many?
-	
-	puidmapping = StandardSignatureHandler.retrieve_ext_list(containerpuidlist)
+for i, y in enumerate(formatmappings.iter()):
+	sigid = y.get('signatureId')
+	puid = y.get('Puid')				
+	id2puidmapping[sigid] = puid
+	containerpuidlist.append(puid)	#len(puidlist) #one too many?
 
-	# swap keys so we can access dict via puid value
-	puid2idmapping = dict((value, key) for key, value in id2puidmapping.iteritems())
+puidmapping = StandardSignatureHandler.retrieve_ext_list(containerpuidlist)
 
-	#retrieve filename...
-	#fmt-x-sig-id-xxxx.ext	
-	for x in puidmapping:
-		if x in puid2idmapping:		
-			fmtid = puid2idmapping[x]
-			fmt = x
-			#print fmt.replace('/', '-') + '-container-signature-id-' + str(fmtid) + '.' + str(puidmapping[x])
+# swap keys so we can access dict via puid value
+puid2idmapping = dict((value, key) for key, value in id2puidmapping.iteritems())
 
-	for topelements in xml_iter:
+#retrieve filename...
+#fmt-x-sig-id-xxxx.ext	
+for x in puidmapping:
+	if x in puid2idmapping:		
+		fmtid = puid2idmapping[x]
+		fmt = x
+		print fmt.replace('/', '-') + '-container-signature-id-' + str(fmtid) + '.' + str(puidmapping[x])
 
-		if topelements.tag == 'ContainerSignatures':			
-			for containertags in topelements:
+for topelements in xml_iter:
 
-				containerid = containertags.get('Id')
-				containertype = containertags.get('ContainerType')
-				containerdesc = containertags.find('Description')
-				
-				files = containertags.find('Files').iter()
-				for innerfile in files:
-					if innerfile.tag == 'Path':
-						if innerfile.text == '':
-							sys.stderr.write('Empty path in container signature')						
-						if innerfile.text.find('/') == -1:
-							handlecreatefile('files/' + innerfile.text)
-						else:
-							handlecreatedirectories(innerfile.text)
-							handlecreatefile('files/' + innerfile.text)
-					if innerfile.tag == 'BinarySignatures':
-						sigcoll = innerfile[INTSIGCOLLECTIONOFFSET]
+	if topelements.tag == 'ContainerSignatures':			
+		for containertags in topelements:
 
-						minoff = 0
-						maxoff = 0
-						offset = 0
-						seq = ''
-						for internalsig in sigcoll:
-							signatureiter = internalsig.iter()
-							for signaturecomponents in signatureiter:
-								if signaturecomponents.tag == 'ByteSequence':
-									offset = 0
-									offset = signaturecomponents.get('Reference')  #note: treat none as BOF
-								if signaturecomponents.tag == 'SubSequence':
-									minoff = 0
-									minoff = signaturecomponents.get('SubSeqMinOffset')
-									maxoff = 0
-									maxoff = signaturecomponents.get('SubSeqMaxOffset')
-								if signaturecomponents.tag == 'Sequence':
-									#note strange square brackets in open office sequences
-									seq = ''
-									seq = convertbytesequence(signaturecomponents.text)	
+			containerid = containertags.get('Id')
+			containertype = containertags.get('ContainerType')
+			containerdesc = containertags.find('Description')
+			
+			files = containertags.find('Files').iter()
+			for innerfile in files:
+				if innerfile.tag == 'Path':
+					if innerfile.text == '':
+						sys.stderr.write('Empty path in container signature')						
+					if innerfile.text.find('/') == -1:
+						handlecreatefile('files/' + innerfile.text)
+					else:
+						handlecreatedirectories(innerfile.text)
+						handlecreatefile('files/' + innerfile.text)
+				if innerfile.tag == 'BinarySignatures':
+					sigcoll = innerfile[INTSIGCOLLECTIONOFFSET]
 
-								if seq != '':
-										#todo, output to file...
-									sig2map = signature2bytegenerator.Sig2ByteGenerator()	#TODO: New instance or not?
-									if offset == 'BOFoffset':
-										bytes = sig2map.map_signature(minoff, seq, 0, 0)
-									elif offset == 'EOFoffset':
-										bytes = sig2map.map_signature(0, seq, minoff, 0)
-									else:		#treat as BOF
-										bytes = sig2map.map_signature(minoff, seq, 0, 0)
-									print seq
-									print bytes
+					minoff = 0
+					maxoff = 0
+					offset = 0
+					seq = ''
+					for internalsig in sigcoll:
+						signatureiter = internalsig.iter()
+						for signaturecomponents in signatureiter:
+							if signaturecomponents.tag == 'ByteSequence':
+								offset = 0
+								offset = signaturecomponents.get('Reference')  #note: treat none as BOF
+							if signaturecomponents.tag == 'SubSequence':
+								minoff = 0
+								minoff = signaturecomponents.get('SubSeqMinOffset')
+								maxoff = 0
+								maxoff = signaturecomponents.get('SubSeqMaxOffset')
+							if signaturecomponents.tag == 'Sequence':
+								#note strange square brackets in open office sequences
+								seq = ''
+								seq = convertbytesequence(signaturecomponents.text)	
 
-									#for x in bof_sequence:
-									#	try:
-									#		s = map(ord, x.decode('hex'))
-									#		for y in s:
-									#			self.nt_file.write(chr(y))
-									#	except:
-									#		sys.stderr.write("BOF Signature not mapped: " + seq + '\n\n')
+							if seq != '':
+									#todo, output to file...
+								sig2map = signature2bytegenerator.Sig2ByteGenerator()	#TODO: New instance or not?
+								if offset == 'BOFoffset':
+									bytes = sig2map.map_signature(minoff, seq, 0, 0)
+								elif offset == 'EOFoffset':
+									bytes = sig2map.map_signature(0, seq, minoff, 0)
+								else:		#treat as BOF
+									bytes = sig2map.map_signature(minoff, seq, 0, 0)
+								#print seq
+								#print bytes
 
+								#for x in bytes:
+								#	s = map(ord, x.decode('hex'))
+								#	for y in s:
+								#		print chr(y)
 
-except IOError as (errno, strerror):
-	sys.stderr.write("IO error({0}): {1}".format(errno, strerror) + '\n')
+								#for x in bof_sequence:
+								#	try:
+								#		s = map(ord, x.decode('hex'))
+								#		for y in s:
+								#			self.nt_file.write(chr(y))
+								#	except:
+								#		sys.stderr.write("BOF Signature not mapped: " + seq + '\n\n')
 
-f.close()
 
