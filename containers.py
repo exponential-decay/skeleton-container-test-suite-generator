@@ -92,6 +92,8 @@ class SkeletonContainerGenerator:
 		for topelements in iter(containertree):
 
 			if topelements.tag == 'ContainerSignatures':			
+				#retrieving each container file type at this point...
+				#create bytestream to write to and write to file... 				
 				for container in topelements:
 
 
