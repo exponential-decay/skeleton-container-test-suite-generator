@@ -4,6 +4,8 @@ import xml.etree.ElementTree as etree
 from DroidStandardSigFileClass import DroidStandardSigFileClass
 import signature2bytegenerator
 
+#TODO Counts, e.g. no. container signatuers held in file
+
 def handlecreatedirectories(path):
 	pathlist = path.split('/')
 	filetocreate = pathlist.pop()	#return and remove filepart from filepath
@@ -45,41 +47,54 @@ def __parse_xml__(xmlfile):
 		sys.stderr.write("IO error({0}): {1}".format(errno, strerror) + '\n')
 		f.close()
 
+#create a dictionary of puids based on ID
+def mapcontaineridstopuids(containertree):
+
+	container_id_to_puid_map = {}
+
+	formatmappings = containertree.find('FileFormatMappings')
+
+	for i, y in enumerate(formatmappings.iter()):
+		sigid = y.get('signatureId')
+		puid = y.get('Puid')				
+		if puid is not None:			#TODO: WHy None?
+			container_id_to_puid_map[sigid] = puid			
+				
+	return container_id_to_puid_map
+
+#create a dictionary filenames to use beased on ID
+def createcontainerfilenamedict(container_id_to_puid_map):
+
+	idfilenameict = {}
+
+	StandardSignatureFileHandler = DroidStandardSigFileClass('sig-file.xml')
+	puidmapping = StandardSignatureFileHandler.retrieve_ext_list(container_id_to_puid_map.values())
+
+	# swap keys so we can access dict via puid value
+	puid2idmapping = dict((value, key) for key, value in container_id_to_puid_map.iteritems())
+
+	#retrieve filename...
+	#fmt-x-sig-id-xxxx.ext	
+	for x in puidmapping:
+		if x in puid2idmapping:		
+			fmtid = puid2idmapping[x]
+			fmt = x
+			idfilenameict[fmtid] = fmt.replace('/', '-') + '-container-signature-id-' + str(fmtid) + '.' + str(puidmapping[x])
+
+	return idfilenameict
 
 INTSIGCOLLECTIONOFFSET = 0
-
-StandardSignatureHandler = DroidStandardSigFileClass('sig-file.xml')
-
-
-id2puidmapping = {} 	#idmap
-puidmap = {}
 
 #list of puids in container signature file
 containerpuidlist = []
 
-root = __parse_xml__('container-signature.xml')
-xml_iter = iter(root)
+containertree = __parse_xml__('container-signature.xml')
+xml_iter = iter(containertree)
 
-formatmappings = root.find('FileFormatMappings')
+container_id_to_puid_map = mapcontaineridstopuids(containertree)
+filenamedict = createcontainerfilenamedict(container_id_to_puid_map)
 
-for i, y in enumerate(formatmappings.iter()):
-	sigid = y.get('signatureId')
-	puid = y.get('Puid')				
-	id2puidmapping[sigid] = puid
-	containerpuidlist.append(puid)	#len(puidlist) #one too many?
-
-puidmapping = StandardSignatureHandler.retrieve_ext_list(containerpuidlist)
-
-# swap keys so we can access dict via puid value
-puid2idmapping = dict((value, key) for key, value in id2puidmapping.iteritems())
-
-#retrieve filename...
-#fmt-x-sig-id-xxxx.ext	
-for x in puidmapping:
-	if x in puid2idmapping:		
-		fmtid = puid2idmapping[x]
-		fmt = x
-		print fmt.replace('/', '-') + '-container-signature-id-' + str(fmtid) + '.' + str(puidmapping[x])
+print filenamedict
 
 for topelements in xml_iter:
 
@@ -147,5 +162,4 @@ for topelements in xml_iter:
 								#			self.nt_file.write(chr(y))
 								#	except:
 								#		sys.stderr.write("BOF Signature not mapped: " + seq + '\n\n')
-
 
