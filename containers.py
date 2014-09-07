@@ -87,6 +87,25 @@ class SkeletonContainerGenerator:
 
 		return idfilenameict
 
+	def containersigfile(self, containertree):
+
+		for topelements in iter(containertree):
+
+			if topelements.tag == 'ContainerSignatures':			
+				for containertags in topelements:
+
+					containerid = containertags.get('Id')
+					containertype = containertags.get('ContainerType')
+					containerdesc = containertags.find('Description')
+			
+					files = containertags.find('Files').iter()
+					for innerfile in files:
+						if innerfile.tag == 'Path':
+							self.handlecontainersignaturefilepaths(innerfile)
+
+						if innerfile.tag == 'BinarySignatures':
+							self.handlecontainersignaturefilesigs(innerfile)
+
 	def handlecontainersignaturefilepaths(self, innerfile):
 
 		if innerfile.text == '':
@@ -131,41 +150,7 @@ class SkeletonContainerGenerator:
 					else:		#treat as BOF
 						bytes = sig2map.map_signature(minoff, seq, 0, 0)
 					#print seq
-					print bytes
-
-					#for x in bytes:
-					#	s = map(ord, x.decode('hex'))
-					#	for y in s:
-					#		print chr(y)
-
-					#for x in bof_sequence:
-					#	try:
-					#		s = map(ord, x.decode('hex'))
-					#		for y in s:
-					#			self.nt_file.write(chr(y))
-					#	except:
-					#		sys.stderr.write("BOF Signature not mapped: " + seq + '\n\n')
-
-	def containersigfile(self, containertree):
-
-		for topelements in iter(containertree):
-
-			if topelements.tag == 'ContainerSignatures':			
-				for containertags in topelements:
-
-					containerid = containertags.get('Id')
-					containertype = containertags.get('ContainerType')
-					containerdesc = containertags.find('Description')
-			
-					files = containertags.find('Files').iter()
-					for innerfile in files:
-						if innerfile.tag == 'Path':
-							self.handlecontainersignaturefilepaths(innerfile)
-
-
-						if innerfile.tag == 'BinarySignatures':
-							self.handlecontainersignaturefilesigs(innerfile)
-							
+					#print bytes
 
 
 
