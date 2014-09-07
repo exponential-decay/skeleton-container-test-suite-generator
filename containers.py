@@ -6,9 +6,11 @@ import signature2bytegenerator
 
 class SkeletonContainerGenerator:
 
+	INTSIGCOLLECTIONOFFSET = 0
+
 	#TODO Counts, e.g. no. container signatuers held in file
 
-	def handlecreatedirectories(path):
+	def handlecreatedirectories(self, path):
 		pathlist = path.split('/')
 		filetocreate = pathlist.pop()	#return and remove filepart from filepath
 		newpath = ""
@@ -18,11 +20,11 @@ class SkeletonContainerGenerator:
 			os.makedirs('files/' + newpath)	
 		return filetocreate
 
-	def handlecreatefile(path):
+	def handlecreatefile(self, path):
 		skeletonfilepart = open(path, 'wb')
 		skeletonfilepart.close()
 
-	def convertbytesequence(sequence):
+	def convertbytesequence(self, sequence):
 		#source; https://gist.github.com/richardlehane/f71a0e8f15c99c805ec4 
 		#testsig = "10 00 00 00 'Word.Document.' ['6'-'7'] 00"
 		l = sequence.split("'")
@@ -39,7 +41,7 @@ class SkeletonContainerGenerator:
 
 		return ns.replace(" ", "")
 
-	def __parse_xml__(xmlfile):
+	def __parse_xml__(self, xmlfile):
 		f = open(xmlfile, 'rb')
 		try:
 			tree = etree.parse(f)
@@ -50,7 +52,7 @@ class SkeletonContainerGenerator:
 			f.close()
 
 	#create a dictionary of puids based on ID
-	def mapcontaineridstopuids(containertree):
+	def mapcontaineridstopuids(self, containertree):
 
 		container_id_to_puid_map = {}
 
@@ -65,7 +67,7 @@ class SkeletonContainerGenerator:
 		return container_id_to_puid_map
 
 	#create a dictionary filenames to use beased on ID
-	def createcontainerfilenamedict(container_id_to_puid_map):
+	def createcontainerfilenamedict(self, container_id_to_puid_map):
 
 		idfilenameict = {}
 
@@ -85,13 +87,68 @@ class SkeletonContainerGenerator:
 
 		return idfilenameict
 
+	def handlecontainersignaturefilepaths(self, innerfile):
 
+		if innerfile.text == '':
+			sys.stderr.write('Empty path in container signature')						
+		if innerfile.text.find('/') == -1:
+			self.handlecreatefile('files/' + innerfile.text)
+		else:
+			self.handlecreatedirectories(innerfile.text)
+			self.handlecreatefile('files/' + innerfile.text)
 
-	def containersigfile(containertree):
+	def handlecontainersignaturefilesigs(self, innerfile):
+		
+		sigcoll = innerfile[self.INTSIGCOLLECTIONOFFSET]
+
+		minoff = 0
+		maxoff = 0
+		offset = 0
+		seq = ''
+		for internalsig in sigcoll:
+			signatureiter = internalsig.iter()
+			for signaturecomponents in signatureiter:
+				if signaturecomponents.tag == 'ByteSequence':
+					offset = 0
+					offset = signaturecomponents.get('Reference')  #note: treat none as BOF
+				if signaturecomponents.tag == 'SubSequence':
+					minoff = 0
+					minoff = signaturecomponents.get('SubSeqMinOffset')
+					maxoff = 0
+					maxoff = signaturecomponents.get('SubSeqMaxOffset')
+				if signaturecomponents.tag == 'Sequence':
+					#note strange square brackets in open office sequences
+					seq = ''
+					seq = self.convertbytesequence(signaturecomponents.text)	
+
+				if seq != '':
+						#todo, output to file...
+					sig2map = signature2bytegenerator.Sig2ByteGenerator()	#TODO: New instance or not?
+					if offset == 'BOFoffset':
+						bytes = sig2map.map_signature(minoff, seq, 0, 0)
+					elif offset == 'EOFoffset':
+						bytes = sig2map.map_signature(0, seq, minoff, 0)
+					else:		#treat as BOF
+						bytes = sig2map.map_signature(minoff, seq, 0, 0)
+					#print seq
+					print bytes
+
+					#for x in bytes:
+					#	s = map(ord, x.decode('hex'))
+					#	for y in s:
+					#		print chr(y)
+
+					#for x in bof_sequence:
+					#	try:
+					#		s = map(ord, x.decode('hex'))
+					#		for y in s:
+					#			self.nt_file.write(chr(y))
+					#	except:
+					#		sys.stderr.write("BOF Signature not mapped: " + seq + '\n\n')
+
+	def containersigfile(self, containertree):
 
 		for topelements in iter(containertree):
-
-			INTSIGCOLLECTIONOFFSET = 0
 
 			if topelements.tag == 'ContainerSignatures':			
 				for containertags in topelements:
@@ -103,61 +160,12 @@ class SkeletonContainerGenerator:
 					files = containertags.find('Files').iter()
 					for innerfile in files:
 						if innerfile.tag == 'Path':
-							if innerfile.text == '':
-								sys.stderr.write('Empty path in container signature')						
-							if innerfile.text.find('/') == -1:
-								handlecreatefile('files/' + innerfile.text)
-							else:
-								handlecreatedirectories(innerfile.text)
-								handlecreatefile('files/' + innerfile.text)
+							self.handlecontainersignaturefilepaths(innerfile)
+
+
 						if innerfile.tag == 'BinarySignatures':
-							sigcoll = innerfile[INTSIGCOLLECTIONOFFSET]
-
-							minoff = 0
-							maxoff = 0
-							offset = 0
-							seq = ''
-							for internalsig in sigcoll:
-								signatureiter = internalsig.iter()
-								for signaturecomponents in signatureiter:
-									if signaturecomponents.tag == 'ByteSequence':
-										offset = 0
-										offset = signaturecomponents.get('Reference')  #note: treat none as BOF
-									if signaturecomponents.tag == 'SubSequence':
-										minoff = 0
-										minoff = signaturecomponents.get('SubSeqMinOffset')
-										maxoff = 0
-										maxoff = signaturecomponents.get('SubSeqMaxOffset')
-									if signaturecomponents.tag == 'Sequence':
-										#note strange square brackets in open office sequences
-										seq = ''
-										seq = convertbytesequence(signaturecomponents.text)	
-
-									if seq != '':
-											#todo, output to file...
-										sig2map = signature2bytegenerator.Sig2ByteGenerator()	#TODO: New instance or not?
-										if offset == 'BOFoffset':
-											bytes = sig2map.map_signature(minoff, seq, 0, 0)
-										elif offset == 'EOFoffset':
-											bytes = sig2map.map_signature(0, seq, minoff, 0)
-										else:		#treat as BOF
-											bytes = sig2map.map_signature(minoff, seq, 0, 0)
-										#print seq
-										print bytes
-
-										#for x in bytes:
-										#	s = map(ord, x.decode('hex'))
-										#	for y in s:
-										#		print chr(y)
-
-										#for x in bof_sequence:
-										#	try:
-										#		s = map(ord, x.decode('hex'))
-										#		for y in s:
-										#			self.nt_file.write(chr(y))
-										#	except:
-										#		sys.stderr.write("BOF Signature not mapped: " + seq + '\n\n')
-
+							self.handlecontainersignaturefilesigs(innerfile)
+							
 
 
 
@@ -166,4 +174,4 @@ skg = SkeletonContainerGenerator()
 containertree = skg.__parse_xml__('container-signature.xml')
 container_id_to_puid_map = skg.mapcontaineridstopuids(containertree)
 filenamedict = skg.createcontainerfilenamedict(container_id_to_puid_map)
-containersigfile(containertree)
+skg.containersigfile(containertree)
