@@ -92,13 +92,15 @@ class SkeletonContainerGenerator:
 		for topelements in iter(containertree):
 
 			if topelements.tag == 'ContainerSignatures':			
-				for containertags in topelements:
+				for container in topelements:
 
-					containerid = containertags.get('Id')
-					containertype = containertags.get('ContainerType')
-					containerdesc = containertags.find('Description')
+
+					containerid = container.get('Id')
+					containertype = container.get('ContainerType')
+					containerdesc = container.find('Description')
 			
-					files = containertags.find('Files').iter()
+
+					files = container.find('Files').iter()
 					for innerfile in files:
 						if innerfile.tag == 'Path':
 							self.handlecontainersignaturefilepaths(innerfile)
@@ -156,7 +158,11 @@ class SkeletonContainerGenerator:
 
 
 skg = SkeletonContainerGenerator()
+
+#TODO: provide both signature files as arguments... 
 containertree = skg.__parse_xml__('container-signature.xml')
+
+
 container_id_to_puid_map = skg.mapcontaineridstopuids(containertree)
 filenamedict = skg.createcontainerfilenamedict(container_id_to_puid_map)
 skg.containersigfile(containertree)
