@@ -3,10 +3,12 @@ import sys
 import xml.etree.ElementTree as etree
 from DroidStandardSigFileClass import DroidStandardSigFileClass
 import signature2bytegenerator
+from io import BytesIO
 
 class SkeletonContainerGenerator:
 
 	INTSIGCOLLECTIONOFFSET = 0
+	
 
 	#TODO Counts, e.g. no. container signatuers held in file
 
@@ -22,7 +24,7 @@ class SkeletonContainerGenerator:
 
 	def handlecreatefile(self, path):
 		skeletonfilepart = open(path, 'wb')
-		skeletonfilepart.close()
+		return skeletonfilepart
 
 	def convertbytesequence(self, sequence):
 		#source; https://gist.github.com/richardlehane/f71a0e8f15c99c805ec4 
@@ -69,7 +71,7 @@ class SkeletonContainerGenerator:
 	#create a dictionary filenames to use beased on ID
 	def createcontainerfilenamedict(self, container_id_to_puid_map):
 
-		idfilenameict = {}
+		idfilenamedict = {}
 
 		StandardSignatureFileHandler = DroidStandardSigFileClass('sig-file.xml')
 		puidmapping = StandardSignatureFileHandler.retrieve_ext_list(container_id_to_puid_map.values())
@@ -83,11 +85,11 @@ class SkeletonContainerGenerator:
 			if x in puid2idmapping:		
 				fmtid = puid2idmapping[x]
 				fmt = x
-				idfilenameict[fmtid] = fmt.replace('/', '-') + '-container-signature-id-' + str(fmtid) + '.' + str(puidmapping[x])
+				idfilenamedict[fmtid] = fmt.replace('/', '-') + '-container-signature-id-' + str(fmtid) + '.' + str(puidmapping[x])
 
-		return idfilenameict
+		return idfilenamedict
 
-	def containersigfile(self, containertree):
+	def containersigfile(self, containertree, filenamedict):
 
 		for topelements in iter(containertree):
 
@@ -100,28 +102,57 @@ class SkeletonContainerGenerator:
 					containerid = container.get('Id')
 					containertype = container.get('ContainerType')
 					containerdesc = container.find('Description')
-			
 
-					files = container.find('Files').iter()
-					for innerfile in files:
-						if innerfile.tag == 'Path':
-							self.handlecontainersignaturefilepaths(innerfile)
+					cf = None
+					filetowrite = None
 
-						if innerfile.tag == 'BinarySignatures':
-							self.handlecontainersignaturefilesigs(innerfile)
+					if containerid in filenamedict:	#TODO: Bug filtering too many filenmes/ids out, e.g. 1030, fmt/412
+						containerfilename = filenamedict[containerid]	
 
-	def handlecontainersignaturefilepaths(self, innerfile):
+						files = container.find('Files').iter()
 
+						for innerfile in files:
+
+							if innerfile.tag == 'Path':
+								cf = self.handlecontainersignaturefilepaths(innerfile, containerfilename)
+
+							if innerfile.tag == 'BinarySignatures':
+								filetowrite = self.handlecontainersignaturefilesigs(innerfile)
+
+							if cf != None and filetowrite != None:
+								cf.write(filetowrite.getvalue())
+								cf.close()
+								cf = None
+								filetowrite = None
+
+	def handlecontainersignaturefilepaths(self, innerfile, containerfilename):
+		containerfilename = containerfilename + '/'
+		cf = None
 		if innerfile.text == '':
-			sys.stderr.write('Empty path in container signature')						
-		if innerfile.text.find('/') == -1:
-			self.handlecreatefile('files/' + innerfile.text)
+			#self.handlecreatefile('files/')
+			self.handlecreatedirectories(containerfilename)
+		#if innerfile.text.find('/') == -1:
+		#	self.handlecreatedirectories(containerfilename)
+		#	self.handlecreatefile('files/' + innerfile.text)
 		else:
-			self.handlecreatedirectories(innerfile.text)
-			self.handlecreatefile('files/' + innerfile.text)
+			containerfilename = containerfilename + innerfile.text
+			self.handlecreatedirectories(containerfilename)
+			cf = self.handlecreatefile('files/' + containerfilename)
+		return cf
+
+	def dowriteseq(self, bio, bytes):
+		for x in bytes:
+			try:
+				s = map(ord, x.decode('hex'))
+				for y in s:
+					bio.write(chr(y))
+			except:
+				sys.stderr.write("Sequence not mapped not mapped: " + seq + '\n\n')
+		return bio
 
 	def handlecontainersignaturefilesigs(self, innerfile):
-		
+			
+		bio = BytesIO()
 		sigcoll = innerfile[self.INTSIGCOLLECTIONOFFSET]
 
 		minoff = 0
@@ -145,18 +176,20 @@ class SkeletonContainerGenerator:
 					seq = self.convertbytesequence(signaturecomponents.text)	
 
 				if seq != '':
-						#todo, output to file...
 					sig2map = signature2bytegenerator.Sig2ByteGenerator()	#TODO: New instance or not?
 					if offset == 'BOFoffset':
 						bytes = sig2map.map_signature(minoff, seq, 0, 0)
+						bio.seek(0)
+						bio = self.dowriteseq(bio, bytes)
 					elif offset == 'EOFoffset':
 						bytes = sig2map.map_signature(0, seq, minoff, 0)
+						bio.seek(0, SEEK_END)
+						bio = self.dowriteseq(bio, bytes)
 					else:		#treat as BOF
 						bytes = sig2map.map_signature(minoff, seq, 0, 0)
-					#print seq
-					#print bytes
-
-
+						bio.seek(0)
+						bio = self.dowriteseq(bio, bytes)
+		return bio
 
 
 skg = SkeletonContainerGenerator()
@@ -167,4 +200,4 @@ containertree = skg.__parse_xml__('container-signature.xml')
 
 container_id_to_puid_map = skg.mapcontaineridstopuids(containertree)
 filenamedict = skg.createcontainerfilenamedict(container_id_to_puid_map)
-skg.containersigfile(containertree)
+skg.containersigfile(containertree, filenamedict)
