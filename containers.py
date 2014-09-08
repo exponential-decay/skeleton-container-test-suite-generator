@@ -122,6 +122,8 @@ class SkeletonContainerGenerator:
 							if cf != None and filetowrite != None:
 								cf.write(filetowrite.getvalue())
 								cf.close()
+
+								#clean-up pointers to write to again...
 								cf = None
 								filetowrite = None
 
