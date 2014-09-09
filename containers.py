@@ -31,7 +31,6 @@ class SkeletonContainerGenerator:
 		#source; https://gist.github.com/richardlehane/f71a0e8f15c99c805ec4 
 		#testsig = "10 00 00 00 'Word.Document.' ['6'-'7'] 00"
 
-
 		l = sequence.split("'")
 		ns = ""
 
@@ -47,14 +46,9 @@ class SkeletonContainerGenerator:
 					for v in vallist:
 						if v != '':
 							ns += v
-							break
-				#elif l[i].find('[') != -1:
-					#break					
+							break				
 				else:
 					ns += l[i]
-
-		#TODO: if ns.find(']') != -1:
-			#print ns.replace(" ", "")
 
 		return ns.replace(" ", "")
 
