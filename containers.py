@@ -30,6 +30,8 @@ class SkeletonContainerGenerator:
 	def convertbytesequence(self, sequence):
 		#source; https://gist.github.com/richardlehane/f71a0e8f15c99c805ec4 
 		#testsig = "10 00 00 00 'Word.Document.' ['6'-'7'] 00"
+
+
 		l = sequence.split("'")
 		ns = ""
 
@@ -37,10 +39,22 @@ class SkeletonContainerGenerator:
 			#split assumes a space if starts/terminates with delimeter
 			#even number of single-quotes means every-other character needs converting
 			#no delimiter no split...	
-			if i % 2 != 0:			
+			if i % 2 != 0:		
 				ns += "".join([hex(ord(x))[2:] for x in l[i]])
 			else:
-				ns += l[i]
+				if l[i].find('[') != -1 and l[i].find(']') != -1:
+					vallist = l[i].replace('[', '').replace(']','').split(' ')
+					for v in vallist:
+						if v != '':
+							ns += v
+							break
+				#elif l[i].find('[') != -1:
+					#break					
+				else:
+					ns += l[i]
+
+		#TODO: if ns.find(']') != -1:
+			#print ns.replace(" ", "")
 
 		return ns.replace(" ", "")
 
