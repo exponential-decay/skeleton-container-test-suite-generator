@@ -4,6 +4,7 @@ import xml.etree.ElementTree as etree
 from DroidStandardSigFileClass import DroidStandardSigFileClass
 import signature2bytegenerator
 from io import BytesIO
+from shutil import make_archive
 
 class SkeletonContainerGenerator:
 
@@ -89,6 +90,12 @@ class SkeletonContainerGenerator:
 
 		return idfilenamedict
 
+	def packagecontainer(self, containerfilename):
+		# no more complicated mechanism needed for zip...
+		fname = 'files/' + containerfilename
+		zipname = make_archive('zips/' + containerfilename, format="zip", root_dir=fname)   	
+		os.rename(zipname, zipname.rsplit('.', 1)[0])
+
 	def containersigfile(self, containertree, filenamedict):
 
 		for topelements in iter(containertree):
@@ -126,6 +133,11 @@ class SkeletonContainerGenerator:
 								#clean-up pointers to write to again...
 								cf = None
 								filetowrite = None
+						
+
+						#print containertype
+						if containertype == 'ZIP':
+							self.packagecontainer(containerfilename)
 
 	def handlecontainersignaturefilepaths(self, innerfile, containerfilename):
 		containerfilename = containerfilename + '/'
@@ -169,9 +181,11 @@ class SkeletonContainerGenerator:
 					offset = signaturecomponents.get('Reference')  #note: treat none as BOF
 				if signaturecomponents.tag == 'SubSequence':
 					minoff = 0
-					minoff = signaturecomponents.get('SubSeqMinOffset')
+					val = signaturecomponents.get('SubSeqMinOffset')
+					minoff = 0 if val == None else val
 					maxoff = 0
-					maxoff = signaturecomponents.get('SubSeqMaxOffset')
+					val = signaturecomponents.get('SubSeqMaxOffset')
+					maxoff = 0 if val == None else val
 				if signaturecomponents.tag == 'Sequence':
 					#note strange square brackets in open office sequences
 					seq = ''
@@ -180,8 +194,8 @@ class SkeletonContainerGenerator:
 				if seq != '':
 					sig2map = signature2bytegenerator.Sig2ByteGenerator()	#TODO: New instance or not?
 					if offset == 'BOFoffset':
-						bytes = sig2map.map_signature(minoff, seq, 0, 0)
-						bio.seek(0)
+						bytes = sig2map.map_signature(minoff, seq, maxoff, 0)
+						#bio.seek(0)	#TODO: Handle BOF sequences properly
 						bio = self.dowriteseq(bio, bytes)
 					elif offset == 'EOFoffset':
 						bytes = sig2map.map_signature(0, seq, minoff, 0)
