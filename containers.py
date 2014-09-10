@@ -24,6 +24,9 @@ class SkeletonContainerGenerator:
 		
 		#stats
 		self.nocontainersigs = 0
+		self.zipcount = 0
+		self.ole2count = 0
+		self.othercount = 0
 
 	def generateskeletonfiles(self):
 		container_id_to_puid_map = self.mapcontaineridstopuids(self.containertree)
@@ -174,8 +177,13 @@ class SkeletonContainerGenerator:
 					
 						#print containertype
 						if containertype == 'ZIP':
+							self.zipcount +=1
 							self.packagecontainer(containerfilename)
-
+						elif containertype == 'OLE2':
+							self.ole2count+=1
+						else:
+							self.othercount+=1
+	
 	def handlecontainersignaturefilepaths(self, innerfile, containerfilename):
 		containerfilename = containerfilename + '/'
 		cf = None
