@@ -3,7 +3,7 @@ import xml.etree.ElementTree as etree
 class DroidStandardSigFileClass:
 
 	def __init__(self, sigfile):
-		self.sigfile = open('sig-file.xml', 'rb')
+		self.sigfile = open(sigfile, 'rb')
 	#def __iterate_xml__(self):
 
 	#given a puid, return an extension from droid signature file

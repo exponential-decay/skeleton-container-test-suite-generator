@@ -9,10 +9,22 @@ from shutil import make_archive
 
 class SkeletonContainerGenerator:
 
-	INTSIGCOLLECTIONOFFSET = 0
-	
+	def __init__(self, containersig, standardsig):
+		self.INTSIGCOLLECTIONOFFSET = 0
 
-	#TODO Counts, e.g. no. container signatuers held in file
+		self.standardsig = standardsig
+		self.containersig = containersig	
+
+		#TODO: provide both signature files as arguments... 
+		#TODO: verify arguments provided are actual sig files...
+		self.containertree = self.__parse_xml__(self.containersig)
+
+		#TODO Counts, e.g. no. container signatuers held in file
+
+	def generateskeletonfiles(self):
+		container_id_to_puid_map = self.mapcontaineridstopuids(self.containertree)
+		filenamedict = self.createcontainerfilenamedict(container_id_to_puid_map)
+		self.containersigfile(self.containertree, filenamedict)
 
 	def handlecreatedirectories(self, path):
 		pathlist = path.split('/')
@@ -83,7 +95,7 @@ class SkeletonContainerGenerator:
 
 		idfilenamedict = {}
 
-		StandardSignatureFileHandler = DroidStandardSigFileClass('sig-file.xml')
+		StandardSignatureFileHandler = DroidStandardSigFileClass(self.standardsig)
 		puidmapping = StandardSignatureFileHandler.retrieve_ext_list(container_id_to_puid_map.values())
 
 		# swap keys so we can access dict via puid value
@@ -218,16 +230,8 @@ class SkeletonContainerGenerator:
 
 def skeletonfilegeneration(containersig, standardsig):
 
-	skg = SkeletonContainerGenerator()
-
-	#TODO: provide both signature files as arguments... 
-	#TODO: verify arguments provided are actual sig files...
-	containertree = skg.__parse_xml__(containersig)
-
-
-	container_id_to_puid_map = skg.mapcontaineridstopuids(containertree)
-	filenamedict = skg.createcontainerfilenamedict(container_id_to_puid_map)
-	skg.containersigfile(containertree, filenamedict)
+	skg = SkeletonContainerGenerator(containersig, standardsig)
+	skg.generateskeletonfiles()
 
 def main():
 
@@ -251,7 +255,10 @@ def main():
    args = parser.parse_args()
    
    if args.con and args.sig:
-		skeletonfilegeneration('container-signature.xml', 'sig-file.xml')
+		#TODO: Delete these once testing is complete...
+		args.con = 'container-signature.xml'
+		args.sig = 'sig-file.xml'
+		skeletonfilegeneration(args.con, args.sig)
    else:
       parser.print_help()
       sys.exit(1)
