@@ -1,5 +1,6 @@
 import os
 import sys
+import argparse
 import xml.etree.ElementTree as etree
 from DroidStandardSigFileClass import DroidStandardSigFileClass
 import signature2bytegenerator
@@ -215,13 +216,45 @@ class SkeletonContainerGenerator:
 						bio = self.dowriteseq(bio, bytes)
 		return bio
 
+def skeletonfilegeneration(containersig, standardsig):
 
-skg = SkeletonContainerGenerator()
+	skg = SkeletonContainerGenerator()
 
-#TODO: provide both signature files as arguments... 
-containertree = skg.__parse_xml__('container-signature.xml')
+	#TODO: provide both signature files as arguments... 
+	#TODO: verify arguments provided are actual sig files...
+	containertree = skg.__parse_xml__(containersig)
 
 
-container_id_to_puid_map = skg.mapcontaineridstopuids(containertree)
-filenamedict = skg.createcontainerfilenamedict(container_id_to_puid_map)
-skg.containersigfile(containertree, filenamedict)
+	container_id_to_puid_map = skg.mapcontaineridstopuids(containertree)
+	filenamedict = skg.createcontainerfilenamedict(container_id_to_puid_map)
+	skg.containersigfile(containertree, filenamedict)
+
+def main():
+
+   #	Usage: 	--con [container signature file]
+   #	Usage: 	--sig [standard signature file]
+   #	Handle command line arguments for the script
+   parser = argparse.ArgumentParser(description='Generate skeleton container files from DROID container signatures.')
+
+   #TODO: Consider optional and mandatory elements... behaviour might change depending on output...
+   #other options droid csv and rosetta schema
+   #NOTE: class on its own might be used to create a blank import csv with just static options
+   parser.add_argument('--con', help='Single DROID CSV to read.', default=False, required=False)
+   parser.add_argument('--sig', help='Archway import schema to use.', default=False, required=False)
+
+   if len(sys.argv)==1:
+      parser.print_help()
+      sys.exit(1)
+
+   #	Parse arguments into namespace object to reference later in the script
+   global args
+   args = parser.parse_args()
+   
+   if args.con and args.sig:
+		skeletonfilegeneration('container-signature.xml', 'sig-file.xml')
+   else:
+      parser.print_help()
+      sys.exit(1)
+
+if __name__ == "__main__":
+   main()
