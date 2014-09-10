@@ -19,7 +19,11 @@ class SkeletonContainerGenerator:
 		#TODO: verify arguments provided are actual sig files...
 		self.containertree = self.__parse_xml__(self.containersig)
 
-		#TODO Counts, e.g. no. container signatuers held in file
+		#TODO: Counts, e.g. no. container signatuers held in file
+		#TODO: If write folders don't exist, create...
+		
+		#stats
+		self.nocontainersigs = 0
 
 	def generateskeletonfiles(self):
 		container_id_to_puid_map = self.mapcontaineridstopuids(self.containertree)
@@ -79,32 +83,48 @@ class SkeletonContainerGenerator:
 	def mapcontaineridstopuids(self, containertree):
 
 		container_id_to_puid_map = {}
-
 		formatmappings = containertree.find('FileFormatMappings')
+
+		#no. items under format mappings, i.e. no. container formats listed
+		self.nocontainersigs = len(formatmappings)
 
 		for i, y in enumerate(formatmappings.iter()):
 			sigid = y.get('signatureId')
 			puid = y.get('Puid')				
 			if puid is not None:			#TODO: WHy None?
 				container_id_to_puid_map[sigid] = puid			
-				
+						
 		return container_id_to_puid_map
 
 	#create a dictionary filenames to use beased on ID
 	def createcontainerfilenamedict(self, container_id_to_puid_map):
 
+		puid_list = container_id_to_puid_map.values()
+
 		idfilenamedict = {}
 
 		StandardSignatureFileHandler = DroidStandardSigFileClass(self.standardsig)
-		puidmapping = StandardSignatureFileHandler.retrieve_ext_list(container_id_to_puid_map.values())
+		puidmapping = StandardSignatureFileHandler.retrieve_ext_list(puid_list)
+
+		import collections
+		duplicate_list = [x for x, y in collections.Counter(puid_list).items() if y > 1]
 
 		# swap keys so we can access dict via puid value
 		puid2idmapping = dict((value, key) for key, value in container_id_to_puid_map.iteritems())
 
+		#Note: False optimisation..?
+		for d in duplicate_list:
+			for id in container_id_to_puid_map:
+				if container_id_to_puid_map[id] == d:
+					fmtid = id
+					fmt = container_id_to_puid_map[id]
+					idfilenamedict[fmtid] = fmt.replace('/', '-') + '-container-signature-id-' + str(fmtid) + '.' + str(puidmapping[container_id_to_puid_map[id]])
+					container_id_to_puid_map[id] = 'done'
+
 		#retrieve filename...
 		#fmt-x-sig-id-xxxx.ext	
-		for x in puidmapping:
-			if x in puid2idmapping:		
+		for x in puid2idmapping:
+			if x in puidmapping:	
 				fmtid = puid2idmapping[x]
 				fmt = x
 				idfilenamedict[fmtid] = fmt.replace('/', '-') + '-container-signature-id-' + str(fmtid) + '.' + str(puidmapping[x])
@@ -120,13 +140,10 @@ class SkeletonContainerGenerator:
 	def containersigfile(self, containertree, filenamedict):
 
 		for topelements in iter(containertree):
-
 			if topelements.tag == 'ContainerSignatures':			
 				#retrieving each container file type at this point...
 				#create bytestream to write to and write to file... 				
 				for container in topelements:
-
-
 					containerid = container.get('Id')
 					containertype = container.get('ContainerType')
 					containerdesc = container.find('Description')
@@ -154,8 +171,7 @@ class SkeletonContainerGenerator:
 								#clean-up pointers to write to again...
 								cf = None
 								filetowrite = None
-						
-
+					
 						#print containertype
 						if containertype == 'ZIP':
 							self.packagecontainer(containerfilename)
