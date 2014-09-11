@@ -50,5 +50,6 @@ class DroidStandardSigFileClass:
 		return 0
 
 	def __del__(self):
-		self.sigfile.close()
+		if not self.sigfile.closed:
+			self.sigfile.close()
 
