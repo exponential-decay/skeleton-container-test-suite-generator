@@ -28,6 +28,12 @@ class SkeletonContainerGenerator:
 		self.ole2count = 0
 		self.othercount = 0
 
+	def __del__(self):
+		sys.stdout.write("No. container signatures identified: " + str(self.nocontainersigs) + "\n")
+		sys.stdout.write("No. zip-based signatures identified: " + str(self.zipcount) + "\n")
+		sys.stdout.write("No. ole2-based signatures identified: " + str(self.ole2count) + "\n")
+		sys.stdout.write("No. other methods identified: " + str(self.othercount) + "\n")
+
 	def generateskeletonfiles(self):
 		container_id_to_puid_map = self.mapcontaineridstopuids(self.containertree)
 		filenamedict = self.createcontainerfilenamedict(container_id_to_puid_map)
@@ -183,6 +189,7 @@ class SkeletonContainerGenerator:
 							self.ole2count+=1
 						else:
 							self.othercount+=1
+							sys.stderr.write("Unknown container format discovered: " + str(containertype) + "\n")
 	
 	def handlecontainersignaturefilepaths(self, innerfile, containerfilename):
 		containerfilename = containerfilename + '/'
