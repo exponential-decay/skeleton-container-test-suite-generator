@@ -140,7 +140,7 @@ class SkeletonContainerGenerator:
 
 		return idfilenamedict
 
-	def packagecontainer(self, containerfilename):
+	def packagezipcontainer(self, containerfilename):
 		# no more complicated mechanism needed for zip...
 		fname = 'files/' + containerfilename
 		zipname = make_archive('zips/' + containerfilename, format="zip", root_dir=fname)   	
@@ -189,7 +189,7 @@ class SkeletonContainerGenerator:
 						#print containertype
 						if containertype == 'ZIP':
 							self.zipcount +=1
-							self.packagecontainer(containerfilename)
+							self.packagezipcontainer(containerfilename)
 						elif containertype == 'OLE2':
 							self.ole2count+=1
 						else:
