@@ -12,6 +12,7 @@ class SkeletonContainerGenerator:
 	def __init__(self, containersig, standardsig):
 
 		self.java = self.__runningjava__()		
+		self.olewrite = None
 
 		if not self.java:
 			sys.stdout.write("Not using Jython. Writing ZIP containers only." + "\n")
@@ -35,12 +36,16 @@ class SkeletonContainerGenerator:
 		self.nocontainersigs = 0
 		self.zipcount = 0
 		self.ole2count = 0
+		self.zipwritten = 0
+		self.ole2written = 0
 		self.othercount = 0
 
 	def __del__(self):
 		sys.stdout.write("No. container signatures identified: " + str(self.nocontainersigs) + "\n")
-		sys.stdout.write("No. zip-based signatures identified: " + str(self.zipcount) + "\n")
+		sys.stdout.write("No. zip-based signatures identified: " + str(self.zipcount) + "\n")		
+		sys.stdout.write("No. zip-based signatures written: " + str(self.zipwritten) + "\n")		
 		sys.stdout.write("No. ole2-based signatures identified: " + str(self.ole2count) + "\n")
+		sys.stdout.write("No. ole2-based signatures written: " + str(self.ole2written) + "\n")
 		sys.stdout.write("No. other methods identified: " + str(self.othercount) + "\n")
 
 	def __runningjava__(self):
@@ -161,11 +166,16 @@ class SkeletonContainerGenerator:
 		fname = 'files/' + containerfilename
 		zipname = make_archive('zips/' + containerfilename, format="zip", root_dir=fname)   	
 		os.rename(zipname, zipname.rsplit('.', 1)[0])
+		#TODO: Actual gague of make_archive's success? 
+		if zipname:
+			self.zipwritten += 1
 
 	def packageole2container(self, containerfilename):
 		fname = 'files/' + containerfilename + '/'
-		self.olewrite.writeContainer(fname, 'ole2s/')
-		#print containerfilename
+		if self.java:
+			ole2success = self.olewrite.writeContainer(fname, 'ole2s/')
+			if ole2success:
+				self.ole2written += 1
 
 	def containersigfile(self, containertree, filenamedict):
 
