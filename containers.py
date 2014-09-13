@@ -300,6 +300,12 @@ def skeletonfilegeneration(containersig, standardsig):
 
 	skg = SkeletonContainerGenerator(containersig, standardsig)
 	skg.generateskeletonfiles()
+	
+	#Jython issues calling class destructor...
+	if skg.java:		#TODO: Not appropriate way to invoke __del__()?
+		skg.__del__()
+
+	sys.exit(0)
 
 def main():
 
