@@ -100,7 +100,7 @@ class SkeletonContainerGenerator:
 		for i, y in enumerate(formatmappings.iter()):
 			sigid = y.get('signatureId')
 			puid = y.get('Puid')				
-			if puid is not None:			#TODO: WHy None?
+			if puid is not None:			#TODO: Why None?
 				container_id_to_puid_map[sigid] = puid			
 						
 		return container_id_to_puid_map
@@ -177,9 +177,14 @@ class SkeletonContainerGenerator:
 								cf.write(filetowrite.getvalue())
 								cf.close()
 
-								#clean-up pointers to write to again...
-								cf = None
-								filetowrite = None
+							elif cf != None and filetowrite == None:
+								#Arbitrary data written so as to play well with POI OLE2 generation
+								cf.write('Empty file. Data created by Skeleton Generator.')
+								cf.close()
+
+							#clean-up pointers to write to again...
+							cf = None
+							filetowrite = None
 					
 						#print containertype
 						if containertype == 'ZIP':
