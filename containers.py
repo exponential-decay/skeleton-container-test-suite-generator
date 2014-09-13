@@ -10,6 +10,14 @@ from shutil import make_archive
 class SkeletonContainerGenerator:
 
 	def __init__(self, containersig, standardsig):
+
+		self.java = self.__runningjava__()		
+
+		if not self.java:
+			sys.stdout.write("Not using Jython. Writing ZIP containers only." + "\n")
+		else:
+			from JWriteOLE2Containers import WriteOLE2Containers
+
 		self.INTSIGCOLLECTIONOFFSET = 0
 
 		self.standardsig = standardsig
@@ -33,6 +41,13 @@ class SkeletonContainerGenerator:
 		sys.stdout.write("No. zip-based signatures identified: " + str(self.zipcount) + "\n")
 		sys.stdout.write("No. ole2-based signatures identified: " + str(self.ole2count) + "\n")
 		sys.stdout.write("No. other methods identified: " + str(self.othercount) + "\n")
+
+	def __runningjava__(self):
+		import platform
+		if platform.system() == 'Java':
+			return True
+		else:
+			return False		
 
 	def generateskeletonfiles(self):
 		container_id_to_puid_map = self.mapcontaineridstopuids(self.containertree)
@@ -141,10 +156,16 @@ class SkeletonContainerGenerator:
 		return idfilenamedict
 
 	def packagezipcontainer(self, containerfilename):
-		# no more complicated mechanism needed for zip...
+		# do not need a complicated mechanism needed for zip it seems...
 		fname = 'files/' + containerfilename
 		zipname = make_archive('zips/' + containerfilename, format="zip", root_dir=fname)   	
 		os.rename(zipname, zipname.rsplit('.', 1)[0])
+
+	def packageole2container(self, containerfilename):
+		# 
+		test = ''
+		#WriteOLE2Containers().writeContainer('ole2-tmp/fmt-39-container-signature-id-1000.doc/', 'ole2s/')
+		#print containerfilename
 
 	def containersigfile(self, containertree, filenamedict):
 
@@ -192,6 +213,7 @@ class SkeletonContainerGenerator:
 							self.packagezipcontainer(containerfilename)
 						elif containertype == 'OLE2':
 							self.ole2count+=1
+							self.packageole2container(containerfilename)
 						else:
 							self.othercount+=1
 							sys.stderr.write("Unknown container format discovered: " + str(containertype) + "\n")
