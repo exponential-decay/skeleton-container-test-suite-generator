@@ -17,6 +17,7 @@ class SkeletonContainerGenerator:
 			sys.stdout.write("Not using Jython. Writing ZIP containers only." + "\n")
 		else:
 			from JWriteOLE2Containers import WriteOLE2Containers
+			self.olewrite = WriteOLE2Containers()
 
 		self.INTSIGCOLLECTIONOFFSET = 0
 
@@ -162,9 +163,8 @@ class SkeletonContainerGenerator:
 		os.rename(zipname, zipname.rsplit('.', 1)[0])
 
 	def packageole2container(self, containerfilename):
-		# 
-		test = ''
-		#WriteOLE2Containers().writeContainer('ole2-tmp/fmt-39-container-signature-id-1000.doc/', 'ole2s/')
+		fname = 'files/' + containerfilename + '/'
+		self.olewrite.writeContainer(fname, 'ole2s/')
 		#print containerfilename
 
 	def containersigfile(self, containertree, filenamedict):
