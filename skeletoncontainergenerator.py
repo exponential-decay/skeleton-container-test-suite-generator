@@ -263,50 +263,60 @@ class SkeletonContainerGenerator:
 				for y in s:
 					bio.write(chr(y))
 			except:
-				sys.stderr.write("Sequence not mapped not mapped: " + seq + '\n\n')
+				sys.stderr.write("Sequence not mapped not mapped: " + str(bytes) + '\n\n')
 		return bio
 
 	def handlecontainersignaturefilesigs(self, innerfile):
 			
 		bio = BytesIO()
-		sigcoll = innerfile[self.INTSIGCOLLECTIONOFFSET]
+		sigcoll = innerfile.findall('InternalSignatureCollection/InternalSignature')
 
 		minoff = 0
 		maxoff = 0
 		offset = 0
 		seq = ''
-		for internalsig in sigcoll:
-			signatureiter = internalsig.iter()
-			for signaturecomponents in signatureiter:
-				if signaturecomponents.tag == 'ByteSequence':
-					offset = 0
-					offset = signaturecomponents.get('Reference')  #note: treat none as BOF
-				if signaturecomponents.tag == 'SubSequence':
-					minoff = 0
-					val = signaturecomponents.get('SubSeqMinOffset')
-					minoff = 0 if val == None else val
-					maxoff = 0
-					val = signaturecomponents.get('SubSeqMaxOffset')
-					maxoff = 0 if val == None else val
-				if signaturecomponents.tag == 'Sequence':
-					#note strange square brackets in open office sequences
-					seq = ''
-					seq = self.convertbytesequence(signaturecomponents.text)	
+		rightfrag = ''
 
-				if seq != '':
-					sig2map = signature2bytegenerator.Sig2ByteGenerator()	#TODO: New instance or not?
-					if offset == 'BOFoffset':
-						bytes = sig2map.map_signature(minoff, seq, maxoff, 0)
-						#bio.seek(0)	#TODO: Handle BOF sequences properly
-						bio = self.dowriteseq(bio, bytes)
-					elif offset == 'EOFoffset':
-						bytes = sig2map.map_signature(0, seq, minoff, 0)
-						bio.seek(0, SEEK_END)
-						bio = self.dowriteseq(bio, bytes)
-					else:		#treat as BOF
-						bytes = sig2map.map_signature(minoff, seq, 0, 0)
-						bio.seek(0)
-						bio = self.dowriteseq(bio, bytes)
+		for sigs in sigcoll:
+			offset = sigs.find('ByteSequence')
+			if offset is not None:
+				offset = offset.get('Reference')
+			subseq = sigs.findall('ByteSequence/SubSequence')
+			if subseq is not None:
+				for sequences in subseq:		
+					val = sequences.get('SubSeqMinOffset')
+					minoff = 0 if val == None else val
+					val = sequences.get('SubSeqMaxOffset')
+					maxoff = 0 if val == None else val
+					seq = ''
+					sequence = sequences.find('Sequence')
+					if sequence is not None:
+						seq = sequence.text
+					rightfrag = sequences.find('RightFragment')
+					if rightfrag is not None:
+						rminoff = 0 if rightfrag.attrib['MinOffset'] == None else rightfrag.attrib['MinOffset']
+						seq = seq + '{' + rminoff + '}' + rightfrag.text
+						print seq
+
+					seq = self.convertbytesequence(seq)
+					bio = self.__writebytestream__(bio, offset, minoff, maxoff, seq)
+		return bio
+
+	def __writebytestream__(self, bio, offset, minoff, maxoff, seq):
+		if seq != '':
+			sig2map = signature2bytegenerator.Sig2ByteGenerator()	#TODO: New instance or not?
+			if offset == 'BOFoffset':
+				bytes = sig2map.map_signature(minoff, seq, maxoff, 0)
+				#bio.seek(0)	#TODO: Handle BOF sequences properly
+				bio = self.dowriteseq(bio, bytes)
+			elif offset == 'EOFoffset':
+				bytes = sig2map.map_signature(0, seq, minoff, 0)
+				bio.seek(0, os.SEEK_END)
+				bio = self.dowriteseq(bio, bytes)
+			else:		#treat as BOF
+				bytes = sig2map.map_signature(minoff, seq, 0, 0)
+				bio.seek(0)
+				bio = self.dowriteseq(bio, bytes)
 		return bio
 
 def skeletonfilegeneration(containersig, standardsig):
