@@ -66,8 +66,8 @@ class SkeletonContainerGenerator:
 		newpath = ""
 		for folder in pathlist:
 			newpath = newpath + folder + '/'
-		if not os.path.exists('files/' + newpath):
-			os.makedirs('files/' + newpath)	
+		if not os.path.exists('skeleton-container-suite/skeleton-folders/' + newpath):
+			os.makedirs('skeleton-container-suite/skeleton-folders/' + newpath)	
 		return filetocreate
 
 	def handlecreatefile(self, path):
@@ -179,17 +179,17 @@ class SkeletonContainerGenerator:
 
 	def packagezipcontainer(self, containerfilename):
 		# do not need a complicated mechanism needed for zip it seems...
-		fname = 'files/' + containerfilename
-		zipname = make_archive('zips/' + containerfilename, format="zip", root_dir=fname)   	
+		fname = 'skeleton-container-suite/skeleton-folders/' + containerfilename
+		zipname = make_archive('skeleton-container-suite/zip/' + containerfilename, format="zip", root_dir=fname)   	
 		os.rename(zipname, zipname.rsplit('.', 1)[0])
 		#TODO: Actual gague of make_archive's success? 
 		if zipname:
 			self.zipwritten += 1
 
 	def packageole2container(self, containerfilename):
-		fname = 'files/' + containerfilename + '/'
+		fname = 'skeleton-container-suite/skeleton-folders/' + containerfilename + '/'
 		if self.java:
-			ole2success = self.olewrite.writeContainer(fname, 'ole2s/')
+			ole2success = self.olewrite.writeContainer(fname, 'skeleton-container-suite/ole2/')
 			if ole2success:
 				self.ole2written += 1
 
@@ -253,7 +253,7 @@ class SkeletonContainerGenerator:
 		else:
 			containerfilename = containerfilename + innerfilename
 			self.handlecreatedirectories(containerfilename)
-			cf = self.handlecreatefile('files/' + containerfilename)
+			cf = self.handlecreatefile('skeleton-container-suite/skeleton-folders/' + containerfilename)
 		return cf
 
 	def dowriteseq(self, bio, bytes):
@@ -351,9 +351,6 @@ def main():
    args = parser.parse_args()
    
    if args.con and args.sig:
-		#TODO: Delete these once testing is complete...
-		args.con = 'container-signature.xml'
-		args.sig = 'sig-file.xml'
 		skeletonfilegeneration(args.con, args.sig)
    else:
       parser.print_help()
