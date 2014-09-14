@@ -194,29 +194,28 @@ class SkeletonContainerGenerator:
 					if containerid in filenamedict:	#TODO: Bug filtering too many filenmes/ids out, e.g. 1030, fmt/412
 						containerfilename = filenamedict[containerid]	
 
-						files = container.find('Files').iter()
+						files = container.findall('Files/File')
+						
+						for f in files:
+							path = f.find('Path')
+							#E.g. ID 4060 Microsoft Project 2007 OLE2 has empty inner filename
+       					#E.g. ID 10000 has directory encoded in path
+							if path == None:
+								#Q. if path is none, do we still need to make a file pointer...
+								cf = self.handlecontainersignaturefilepaths('', containerfilename)
+							else:
+								cf = self.handlecontainersignaturefilepaths(path.text, containerfilename)					
 
-						for innerfile in files:
-
-							if innerfile.tag == 'Path':
-								cf = self.handlecontainersignaturefilepaths(innerfile, containerfilename)
-
-							if innerfile.tag == 'BinarySignatures':
-								filetowrite = self.handlecontainersignaturefilesigs(innerfile)
-
-							if cf != None and filetowrite != None:
-								cf.write(filetowrite.getvalue())
+							binarysigs = f.find('BinarySignatures')
+							if binarysigs == None:
+								cf.write("File empty. Data written by Skeleton Generator.")
 								cf.close()
-
-							elif cf != None and filetowrite == None:
-								#Arbitrary data written so as to play well with POI OLE2 generation
-								cf.write('Empty file. Data created by Skeleton Generator.')
-								cf.close()
-
-							#clean-up pointers to write to again...
-							cf = None
-							filetowrite = None
-					
+							else:
+								filetowrite = self.handlecontainersignaturefilesigs(binarysigs)
+								if cf is not None:
+									cf.write(filetowrite.getvalue())									
+									cf.close()
+								
 						#print containertype
 						if containertype == 'ZIP':
 							self.zipcount +=1
@@ -228,17 +227,15 @@ class SkeletonContainerGenerator:
 							self.othercount+=1
 							sys.stderr.write("Unknown container format discovered: " + str(containertype) + "\n")
 	
-	def handlecontainersignaturefilepaths(self, innerfile, containerfilename):
+	def handlecontainersignaturefilepaths(self, innerfilename, containerfilename):
 		containerfilename = containerfilename + '/'
 		cf = None
-		if innerfile.text == '':
-			#self.handlecreatefile('files/')
-			self.handlecreatedirectories(containerfilename)
-		#if innerfile.text.find('/') == -1:
-		#	self.handlecreatedirectories(containerfilename)
-		#	self.handlecreatefile('files/' + innerfile.text)
+		if innerfilename == '':
+			sys.stderr.write("Cannot write file without a name: " + containerfilename + "\n")
+			#self.handlecreatedirectories(containerfilename)
+			#cf = self.handlecreatefile('files/' + containerfilename + '')
 		else:
-			containerfilename = containerfilename + innerfile.text
+			containerfilename = containerfilename + innerfilename
 			self.handlecreatedirectories(containerfilename)
 			cf = self.handlecreatefile('files/' + containerfilename)
 		return cf

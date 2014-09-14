@@ -48,3 +48,6 @@ class WriteOLE2Containers():
 				fs.close()
 
 		return written
+
+WriteOLE2Containers().writeContainer('ole2-tmp/fmt-39-container-signature-id-1000.doc/', 'ole2s/')
+WriteOLE2Containers().writeContainer('ole2-tmp/fmt-233-container-signature-id-15000.wps/', 'ole2s/')
