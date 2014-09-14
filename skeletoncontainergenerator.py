@@ -75,6 +75,7 @@ class SkeletonContainerGenerator:
 		return skeletonfilepart
 
 	#TODO: make robust for multiple similar option syntax
+	#TODO: unit tests will help understanding different scenarios
 	def __replaceoptionsyntax__(self, ns):
 		part1 = ns.find('[')
 		part2 = ns.find(']') + 1
