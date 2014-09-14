@@ -296,7 +296,6 @@ class SkeletonContainerGenerator:
 					if rightfrag is not None:
 						rminoff = 0 if rightfrag.attrib['MinOffset'] == None else rightfrag.attrib['MinOffset']
 						seq = seq + '{' + rminoff + '}' + rightfrag.text
-						print seq
 
 					seq = self.convertbytesequence(seq)
 					bio = self.__writebytestream__(bio, offset, minoff, maxoff, seq)
