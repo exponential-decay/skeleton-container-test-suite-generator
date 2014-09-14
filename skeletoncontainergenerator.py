@@ -74,6 +74,17 @@ class SkeletonContainerGenerator:
 		skeletonfilepart = open(path, 'wb')
 		return skeletonfilepart
 
+	#TODO: make robust for multiple similar option syntax
+	def __replaceoptionsyntax__(self, ns):
+		part1 = ns.find('[')
+		part2 = ns.find(']') + 1
+		replacement = ns[part1:part2].replace('[', '').replace(']', '').split('-',1)[0]
+		ns = ns[0:part1] + replacement + ns[part2:]
+		if '[' in ns:
+			self.__replaceoptionsyntax__(ns)
+		else:
+			return ns
+
 	def convertbytesequence(self, sequence):
 		#source; https://gist.github.com/richardlehane/f71a0e8f15c99c805ec4 
 		#testsig = "10 00 00 00 'Word.Document.' ['6'-'7'] 00"
@@ -96,6 +107,10 @@ class SkeletonContainerGenerator:
 							break				
 				else:
 					ns += l[i]
+
+		#workaround for ['6'-'7'] issue
+		if '[' in ns:
+			ns = self.__replaceoptionsyntax__(ns)
 
 		return ns.replace(" ", "")
 
