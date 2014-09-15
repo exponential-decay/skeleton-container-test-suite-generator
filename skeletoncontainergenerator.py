@@ -354,8 +354,8 @@ def main():
    #TODO: Consider optional and mandatory elements... behaviour might change depending on output...
    #other options droid csv and rosetta schema
    #NOTE: class on its own might be used to create a blank import csv with just static options
-   parser.add_argument('--con', help='Single DROID CSV to read.', default=False, required=False)
-   parser.add_argument('--sig', help='Archway import schema to use.', default=False, required=False)
+   parser.add_argument('--con', help='DROID Container Signature File.', default=False, required=False)
+   parser.add_argument('--sig', help='DROID Standard Signature File.', default=False, required=False)
 
    if len(sys.argv)==1:
       parser.print_help()
