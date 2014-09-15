@@ -182,14 +182,14 @@ class SkeletonContainerGenerator:
 		fname = 'skeleton-container-suite/skeleton-folders/' + containerfilename
 		zipname = make_archive('skeleton-container-suite/zip/' + containerfilename, format="zip", root_dir=fname)   	
 		os.rename(zipname, zipname.rsplit('.', 1)[0])
-		#TODO: Actual gague of make_archive's success? 
+	#	#TODO: Actual gague of make_archive's success? 
 		if zipname:
 			self.zipwritten += 1
 
 	def packageole2container(self, containerfilename):
 		fname = 'skeleton-container-suite/skeleton-folders/' + containerfilename + '/'
 		if self.java:
-			ole2success = self.olewrite.writeContainer(fname, 'skeleton-container-suite/ole2/')
+			ole2success = self.olewrite.writeContainer(fname, 'skeleton-container-suite/ole2/', containerfilename)
 			if ole2success:
 				self.ole2written += 1
 

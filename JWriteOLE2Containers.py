@@ -12,7 +12,7 @@ class WriteOLE2Containers():
 		fin.read(buf)
 		print buf
 
-	def writeContainer(self, containerfoldername, outputfolder):
+	def writeContainer(self, containerfoldername, outputfolder, outputfilename):
 
 		written = False
 
@@ -20,7 +20,7 @@ class WriteOLE2Containers():
 		#foldername is filename!!	
 		if os.path.isdir(containerfoldername):
 	
-			fname = outputfolder + '/' + containerfoldername.split('/',1)[1].replace('/', '')
+			fname = outputfolder + outputfilename
 
 			fs = NPOIFSFileSystem()
 			root = fs.getRoot();
@@ -43,11 +43,10 @@ class WriteOLE2Containers():
 							written = True
 
 			if written == True:
+				print fname
 				fos = FileOutputStream(fname)
 				fs.writeFilesystem(fos);
 				fs.close()
 
 		return written
 
-WriteOLE2Containers().writeContainer('ole2-tmp/fmt-39-container-signature-id-1000.doc/', 'ole2s/')
-WriteOLE2Containers().writeContainer('ole2-tmp/fmt-233-container-signature-id-15000.wps/', 'ole2s/')
