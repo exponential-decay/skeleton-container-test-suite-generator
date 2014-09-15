@@ -5,11 +5,11 @@ import xml.etree.ElementTree as etree
 from DroidStandardSigFileClass import DroidStandardSigFileClass
 import signature2bytegenerator
 from io import BytesIO
-from shutil import make_archive
+from shutil import make_archive, rmtree
 
 class SkeletonContainerGenerator:
 
-	def __init__(self, containersig, standardsig):
+	def __init__(self, containersig, standardsig, debug):
 
 		self.java = self.__runningjava__()		
 		self.olewrite = None
@@ -24,6 +24,7 @@ class SkeletonContainerGenerator:
 
 		self.standardsig = standardsig
 		self.containersig = containersig	
+		self.debug = debug
 
 		#TODO: verify arguments provided are actual sig files...
 		self.containertree = self.__parse_xml__(self.containersig)
@@ -48,6 +49,9 @@ class SkeletonContainerGenerator:
 		sys.stdout.write("No. ole2-based signatures identified: " + str(self.ole2count) + "\n")
 		sys.stdout.write("No. ole2-based signatures written: " + str(self.ole2written) + "\n")
 		sys.stdout.write("No. other methods identified: " + str(self.othercount) + "\n")
+
+		if not self.debug:
+			rmtree(self.skeletondebugfolder)
 
 	def __runningjava__(self):
 		import platform
@@ -333,9 +337,9 @@ class SkeletonContainerGenerator:
 				bio = self.dowriteseq(bio, bytes)
 		return bio
 
-def skeletonfilegeneration(containersig, standardsig):
+def skeletonfilegeneration(containersig, standardsig, debug):
 
-	skg = SkeletonContainerGenerator(containersig, standardsig)
+	skg = SkeletonContainerGenerator(containersig, standardsig, debug)
 	skg.generateskeletonfiles()
 	
 	#Jython issues calling class destructor...
@@ -354,8 +358,9 @@ def main():
    #TODO: Consider optional and mandatory elements... behaviour might change depending on output...
    #other options droid csv and rosetta schema
    #NOTE: class on its own might be used to create a blank import csv with just static options
-   parser.add_argument('--con', help='DROID Container Signature File.', default=False, required=False)
-   parser.add_argument('--sig', help='DROID Standard Signature File.', default=False, required=False)
+   parser.add_argument('--con', help='DROID Container Signature File.', default=False, required=True)
+   parser.add_argument('--sig', help='DROID Standard Signature File.', default=False, required=True)
+   parser.add_argument('--debug', help="Debug mode. Doesn't delete skeleton-folders directory.", default=False)
 
    if len(sys.argv)==1:
       parser.print_help()
@@ -366,7 +371,7 @@ def main():
    args = parser.parse_args()
    
    if args.con and args.sig:
-		skeletonfilegeneration(args.con, args.sig)
+		skeletonfilegeneration(args.con, args.sig, args.debug)
    else:
       parser.print_help()
       sys.exit(1)
