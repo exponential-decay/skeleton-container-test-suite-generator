@@ -25,7 +25,6 @@ class SkeletonContainerGenerator:
 		self.standardsig = standardsig
 		self.containersig = containersig	
 
-		#TODO: provide both signature files as arguments... 
 		#TODO: verify arguments provided are actual sig files...
 		self.containertree = self.__parse_xml__(self.containersig)
 
@@ -39,6 +38,8 @@ class SkeletonContainerGenerator:
 		self.zipwritten = 0
 		self.ole2written = 0
 		self.othercount = 0
+
+		self.__createfolders__()
 
 	def __del__(self):
 		sys.stdout.write("No. container signatures identified: " + str(self.nocontainersigs) + "\n")
@@ -55,6 +56,20 @@ class SkeletonContainerGenerator:
 		else:
 			return False		
 
+	def __createfolders__(self):
+		self.skeletoncontainerdir = "skeleton-container-suite/"
+		self.skeletondebugfolder = "skeleton-container-suite/skeleton-folders/"
+		self.zipfolder = "skeleton-container-suite/zip/"
+		self.ole2folder = "skeleton-container-suite/ole2/"
+		if not os.path.exists(self.skeletoncontainerdir):
+			os.mkdir(self.skeletoncontainerdir)  
+		if not os.path.exists(self.skeletondebugfolder):
+			os.mkdir(self.skeletondebugfolder)  
+		if not os.path.exists(self.zipfolder):
+			os.mkdir(self.zipfolder)  
+		if not os.path.exists(self.ole2folder):
+			os.mkdir(self.ole2folder)  
+
 	def generateskeletonfiles(self):
 		container_id_to_puid_map = self.mapcontaineridstopuids(self.containertree)
 		filenamedict = self.createcontainerfilenamedict(container_id_to_puid_map)
@@ -66,8 +81,8 @@ class SkeletonContainerGenerator:
 		newpath = ""
 		for folder in pathlist:
 			newpath = newpath + folder + '/'
-		if not os.path.exists('skeleton-container-suite/skeleton-folders/' + newpath):
-			os.makedirs('skeleton-container-suite/skeleton-folders/' + newpath)	
+		if not os.path.exists(self.skeletondebugfolder + newpath):
+			os.makedirs(self.skeletondebugfolder + newpath)	
 		return filetocreate
 
 	def handlecreatefile(self, path):
@@ -179,17 +194,17 @@ class SkeletonContainerGenerator:
 
 	def packagezipcontainer(self, containerfilename):
 		# do not need a complicated mechanism needed for zip it seems...
-		fname = 'skeleton-container-suite/skeleton-folders/' + containerfilename
-		zipname = make_archive('skeleton-container-suite/zip/' + containerfilename, format="zip", root_dir=fname)   	
+		fname = self.skeletondebugfolder + containerfilename
+		zipname = make_archive(self.zipfolder + containerfilename, format="zip", root_dir=fname)   	
 		os.rename(zipname, zipname.rsplit('.', 1)[0])
-	#	#TODO: Actual gague of make_archive's success? 
+		#TODO: Actual gague of make_archive's success? 
 		if zipname:
 			self.zipwritten += 1
 
 	def packageole2container(self, containerfilename):
-		fname = 'skeleton-container-suite/skeleton-folders/' + containerfilename + '/'
+		fname = self.skeletondebugfolder + containerfilename + '/'
 		if self.java:
-			ole2success = self.olewrite.writeContainer(fname, 'skeleton-container-suite/ole2/', containerfilename)
+			ole2success = self.olewrite.writeContainer(fname, self.ole2folder, containerfilename)
 			if ole2success:
 				self.ole2written += 1
 
