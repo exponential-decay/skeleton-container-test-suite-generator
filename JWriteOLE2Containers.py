@@ -43,7 +43,6 @@ class WriteOLE2Containers():
 							written = True
 
 			if written == True:
-				print fname
 				fos = FileOutputStream(fname)
 				fs.writeFilesystem(fos);
 				fs.close()
