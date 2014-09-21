@@ -30,11 +30,14 @@ class DroidStandardSigFileClass:
 					puid = fileformats.get("PUID")
 					for puids in puid_list:
 						if puid == puids:
-							for mapping in fileformats:
-								if mapping.tag == '{http://www.nationalarchives.gov.uk/pronom/SignatureFile}Extension':
-									#return first format extension								
-									puiddict[puids] = mapping.text
-									break
+							ext = fileformats.find('{http://www.nationalarchives.gov.uk/pronom/SignatureFile}Extension')
+							if ext is not None:
+								#return first format extension								
+								puiddict[puids] = ext.text
+								break
+							else:
+								puiddict[puids] = None
+								break
 		return puiddict
 
 	def __parse_xml__(self):
