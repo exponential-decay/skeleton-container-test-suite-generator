@@ -40,6 +40,10 @@ class SkeletonContainerGenerator:
 		self.ole2written = 0
 		self.othercount = 0
 
+		#invalid puids
+		#cases seen where invalid puids have appeared in container signature file
+		self.invalidpuids = []
+
 		self.__createfolders__()
 
 	def __del__(self):
@@ -174,6 +178,27 @@ class SkeletonContainerGenerator:
 
 		return container_id_to_puid_map
 
+	#non-existant puids might exist in signature file
+	def removeinvalidpuidsfromextmapping(self, puiddict):
+		puiddict_tmp = {}
+		for p in puiddict:
+			if puiddict[p] == 'notfound':
+				self.invalidpuids.append(p)
+				sys.stderr.write("PUID value/s not found in standard signature file: " + str(p) + "\n")
+			else:
+				puiddict_tmp[p] = puiddict[p]
+		return puiddict_tmp
+
+	#non-existant puids might exist in signature file
+	def removeinvalidpuidsfromidpuidmapping(self, puid_id_map):
+		for invalidpuid in self.invalidpuids:
+			for id in puid_id_map:
+				if puid_id_map[id] == invalidpuid:
+					del puid_id_map[id]
+					self.removeinvalidpuidsfromidpuidmapping(puid_id_map)
+					break;
+		return puid_id_map
+
 	#create a dictionary filenames to use beased on ID
 	def createcontainerfilenamedict(self, container_id_to_puid_map):
 
@@ -184,6 +209,11 @@ class SkeletonContainerGenerator:
 		StandardSignatureFileHandler = DroidStandardSigFileClass(self.standardsig)
 		puidmapping = StandardSignatureFileHandler.retrieve_ext_list(puid_list)
 
+		puidmapping = self.removeinvalidpuidsfromextmapping(puidmapping)
+
+		if len(self.invalidpuids) > 0:
+			container_id_to_puid_map = self.removeinvalidpuidsfromidpuidmapping(container_id_to_puid_map)
+
 		import collections
 		duplicate_list = [x for x, y in collections.Counter(puid_list).items() if y > 1]
 
@@ -191,6 +221,8 @@ class SkeletonContainerGenerator:
 		puid2idmapping = dict((value, key) for key, value in container_id_to_puid_map.iteritems())
 
 		#Note: False optimisation..?
+		#if we have duplicate PUIDs handle these first and remove from lists...
+		#duplicate puids can be written with different IDs, duplicate IDs can't
 		for d in duplicate_list:
 			for id in container_id_to_puid_map:
 				if container_id_to_puid_map[id] == d:
