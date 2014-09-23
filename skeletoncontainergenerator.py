@@ -53,6 +53,7 @@ class SkeletonContainerGenerator:
 		sys.stdout.write("No. ole2-based signatures identified: " + str(self.ole2count) + "\n")
 		sys.stdout.write("No. ole2-based signatures written: " + str(self.ole2written) + "\n")
 		sys.stdout.write("No. other methods identified: " + str(self.othercount) + "\n")
+		sys.stdout.write("No. container signatures written: " + str(self.ole2written + self.zipwritten) + "\n")
 
 		if not self.debug:
 			rmtree(self.skeletondebugfolder)
