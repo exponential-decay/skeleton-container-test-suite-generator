@@ -153,12 +153,25 @@ class SkeletonContainerGenerator:
 		#no. items under format mappings, i.e. no. container formats listed
 		self.nocontainersigs = len(formatmappings)
 
+		#cannot create a skeleton file for IDs attached to the same signature
+		#list and warn...
+		dupes_tmp = []
+		dupes = []
+
 		for i, y in enumerate(formatmappings.iter()):
 			sigid = y.get('signatureId')
-			puid = y.get('Puid')				
+			puid = y.get('Puid')
+			if sigid not in dupes_tmp:
+				dupes_tmp.append(sigid)
+			else:
+				dupes.append(sigid)		
 			if puid is not None:			#TODO: Why None?
 				container_id_to_puid_map[sigid] = puid			
-						
+
+		if len(dupes) > 0:
+			for d in dupes:
+				sys.stderr.write("Cannot write a skeleton container file for duplicate IDs: " + str(d) + '\n')		
+
 		return container_id_to_puid_map
 
 	#create a dictionary filenames to use beased on ID
