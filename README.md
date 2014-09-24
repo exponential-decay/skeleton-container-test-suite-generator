@@ -45,7 +45,8 @@ Container objects output should match 1:1 in DROID with all current signatures a
 
 ### container-signature-20120611.xml
 
-* MPP 4040, MPP 4060 not written, no file path listed
+* Cannot write file without a path: x-fmt-247-container-signature-id-4040.mpp/
+* Cannot write file without a path: fmt-440-container-signature-id-4060.mpp/
 
 * fmt/60, ID 2000 identified as fmt/60 and fmt/61
 * fmt/61 a catch-all for Excel, fmt/60 more specific
@@ -66,9 +67,15 @@ Container objects output should match 1:1 in DROID with all current signatures a
 
 ### container-signature-20120828.xml
 
-* MPP 4040, MPP 4060 not written, no file path listed
+* Cannot write file without a path: x-fmt-247-container-signature-id-4040.mpp/
+* Cannot write file without a path: fmt-440-container-signature-id-4060.mpp/
 
 * fmt/60, ID 2000 identified as fmt/60 and fmt/61
 * fmt/61 a catch-all for Excel, fmt/60 more specific
+
+### container-signature-20121218.xml
+
+* Cannot write file without a path: x-fmt-247-container-signature-id-4040.mpp/
+* Cannot write file without a path: fmt-440-container-signature-id-4060.mpp/
 
 
