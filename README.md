@@ -32,6 +32,14 @@ Container objects output should match 1:1 in DROID with all current signatures a
 * fmt/60, ID 2000 identified as fmt/60 and fmt/61
 * fmt/61 a catch-all for Excel, fmt/60 more specific
 
+* x-fmt/259, ID 13000 identified as x-fmt/113, x-fmt/258, x-fmt/259
+* x-fmt/113, x-fmt/258, x-fmt/259 all share same signature ID, therefore signature.
+
+### conttainer-signatute-20110204.xml
+
+* fmt/60, ID 2000 identified as fmt/60 and fmt/61
+* fmt/61 a catch-all for Excel, fmt/60 more specific
+
 *x-fmt/259, ID 13000 identified as x-fmt/113, x-fmt/258, x-fmt/259
 *x-fmt/113, x-fmt/258, x-fmt/259 all share same signature ID, therefore signature.
 
