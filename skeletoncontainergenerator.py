@@ -391,6 +391,9 @@ class SkeletonContainerGenerator:
 				bio.seek(0, os.SEEK_END)
 				bio = self.dowriteseq(bio, bytes)
 			else:		#treat as BOF
+				if int(maxoff) > 0:
+					boffill = (int(maxoff) - int(minoff)) / 2
+					seq = '{' + str(boffill) + '}' + seq
 				bytes = sig2map.map_signature(minoff, seq, 0, 0)
 				bio.seek(0)
 				bio = self.dowriteseq(bio, bytes)
