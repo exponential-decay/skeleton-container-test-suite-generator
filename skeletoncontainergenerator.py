@@ -370,7 +370,7 @@ class SkeletonContainerGenerator:
 		if seq != '':
 			sig2map = signature2bytegenerator.Sig2ByteGenerator()	#TODO: New instance or not?
 			if offset == 'BOFoffset':
-				if int(minoff) > 0 and int(maxoff) > 0:
+				if int(maxoff) > 0:
 					boffill = (int(maxoff) - int(minoff)) / 2
 					seq = '{' + str(boffill) + '}' + seq
 				bytes = sig2map.map_signature(minoff, seq, maxoff, 0)
