@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+import re
 import os
 import sys
 import argparse
@@ -114,9 +116,15 @@ class SkeletonContainerGenerator:
 		#source; https://gist.github.com/richardlehane/f71a0e8f15c99c805ec4 
 		#testsig = "10 00 00 00 'Word.Document.' ['6'-'7'] 00"
 
-		l = sequence.split("'")
-		ns = ""
+		if "'" in sequence:
+			l = sequence.split("'")
+		else:
+			sig2map = signature2bytegenerator.Sig2ByteGenerator()
+			l = sig2map.map_signature(0, sequence, 0, 0)
+			l = ''.join(l).replace(' ', '').split("'")
 
+		ns = ""
+	
 		for i in range(len(l)):
 			#split assumes a space if starts/terminates with delimeter
 			#even number of single-quotes means every-other character needs converting
@@ -124,6 +132,7 @@ class SkeletonContainerGenerator:
 			if i % 2 != 0:		
 				ns += "".join([hex(ord(x))[2:] for x in l[i]])
 			else:
+				# IF example: ['', 'office:version=', ' [22 27] ', '1.0', ' [22 27]']
 				if l[i].find('[') != -1 and l[i].find(']') != -1:
 					vallist = l[i].replace('[', '').replace(']','').split(' ')
 					for v in vallist:
