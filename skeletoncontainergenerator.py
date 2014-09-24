@@ -121,6 +121,7 @@ class SkeletonContainerGenerator:
 		else:
 			sig2map = signature2bytegenerator.Sig2ByteGenerator()
 			l = sig2map.map_signature(0, sequence, 0, 0)
+			#TODO: This feels like a bit of a hack, improve...
 			l = ''.join(l).replace(' ', '').split("'")
 
 		ns = ""
