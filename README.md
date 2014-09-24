@@ -35,11 +35,29 @@ Container objects output should match 1:1 in DROID with all current signatures a
 * x-fmt/259, ID 13000 identified as x-fmt/113, x-fmt/258, x-fmt/259
 * x-fmt/113, x-fmt/258, x-fmt/259 all share same signature ID, therefore signature.
 
-### conttainer-signatute-20110204.xml
+### container-signatute-20110204.xml
 
 * fmt/60, ID 2000 identified as fmt/60 and fmt/61
 * fmt/61 a catch-all for Excel, fmt/60 more specific
 
-*x-fmt/259, ID 13000 identified as x-fmt/113, x-fmt/258, x-fmt/259
-*x-fmt/113, x-fmt/258, x-fmt/259 all share same signature ID, therefore signature.
+* x-fmt/259, ID 13000 identified as x-fmt/113, x-fmt/258, x-fmt/259
+* x-fmt/113, x-fmt/258, x-fmt/259 all share same signature ID, therefore signature.
 
+### container-signature-20120611.xml
+
+* fmt/60, ID 2000 identified as fmt/60 and fmt/61
+* fmt/61 a catch-all for Excel, fmt/60 more specific
+
+* fmt/424, ID 9020 as fmt/140 and fmt/424
+* fmt/140, ID 9010 is less specific signature with no version info, capturing both
+
+* x-fmt/258, ID 13010 as x-fmt/258 and x-fmt/442
+* x-fmt/442 less specific, missing 0x06 right fragment
+
+* x-fmt/443, ID 13020 as x-fmt/443 and x-fmt/442
+* x-fmt/442 less specific, missing 0x0B right fragment
+
+* PUIDS mapped to standard signature file incorrectly
+* x-fmt/442 is Form*Z Project File
+* x-fmt/443 is Revit Family File
+* These files should be Visio Documents
