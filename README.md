@@ -92,3 +92,8 @@ Container objects output should match 1:1 in DROID with all current signatures a
 
 * Cannot write file without a path: x-fmt-247-container-signature-id-4040.mpp/
 * Cannot write file without a path: fmt-440-container-signature-id-4060.mpp/
+
+### container-signature-20140227.xml
+
+* Cannot write file without a path: x-fmt-247-container-signature-id-4040.mpp/
+* Cannot write file without a path: fmt-440-container-signature-id-4060.mpp/
