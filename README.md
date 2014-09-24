@@ -45,6 +45,8 @@ Container objects output should match 1:1 in DROID with all current signatures a
 
 ### container-signature-20120611.xml
 
+* MPP 4040, MPP 4060 not written, no file path listed
+
 * fmt/60, ID 2000 identified as fmt/60 and fmt/61
 * fmt/61 a catch-all for Excel, fmt/60 more specific
 
@@ -61,3 +63,12 @@ Container objects output should match 1:1 in DROID with all current signatures a
 * x-fmt/442 is Form*Z Project File
 * x-fmt/443 is Revit Family File
 * These files should be Visio Documents
+
+### container-signature-20120828.xml
+
+* MPP 4040, MPP 4060 not written, no file path listed
+
+* fmt/60, ID 2000 identified as fmt/60 and fmt/61
+* fmt/61 a catch-all for Excel, fmt/60 more specific
+
+
