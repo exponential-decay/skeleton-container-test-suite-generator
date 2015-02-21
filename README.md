@@ -1,7 +1,8 @@
 skeleton-container-test-suite-generator
 =======================================
 
-Work in progress. Adding container functionality to Skeleton Test Suite Generator
+Amendment to the Skeleton Test Suite Generator, creates OLE2 and ZIP based oontainer files invoking the container
+matching mechanisms in The National Archive, UK's DROID file format identification tool. 
 
 #### Jython
 
