@@ -42,6 +42,8 @@ class SkeletonContainerGenerator:
 		self.ole2written = 0
 		self.othercount = 0
 
+		self.notwritten = []
+
 		#invalid puids
 		#cases seen where invalid puids have appeared in container signature file
 		self.invalidpuids = []
@@ -56,6 +58,10 @@ class SkeletonContainerGenerator:
 		sys.stdout.write("No. ole2-based signatures written: " + str(self.ole2written) + "\n")
 		sys.stdout.write("No. other methods identified: " + str(self.othercount) + "\n")
 		sys.stdout.write("No. container signatures written: " + str(self.ole2written + self.zipwritten) + "\n")
+		if len(self.notwritten) > 0:
+			sys.stdout.write("Not written:\n")
+			for x in self.notwritten:
+				sys.stdout.write("  " + x + "\n")
 
 		if not self.debug:
 			rmtree(self.skeletondebugfolder)
@@ -260,6 +266,8 @@ class SkeletonContainerGenerator:
 		#TODO: Actual gague of make_archive's success? 
 		if zipname:
 			self.zipwritten += 1
+		else:
+			self.notwritten = self.notwritten.append(containerfilename)
 
 	def packageole2container(self, containerfilename):
 		fname = self.skeletondebugfolder + containerfilename + '/'
@@ -267,6 +275,8 @@ class SkeletonContainerGenerator:
 			ole2success = self.olewrite.writeContainer(fname, self.ole2folder, containerfilename)
 			if ole2success:
 				self.ole2written += 1
+			else:
+				self.notwritten.append(containerfilename)
 
 	def containersigfile(self, containertree, filenamedict):
 
