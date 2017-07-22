@@ -61,6 +61,27 @@ class Sig2ByteGenerator:
 		elif syn.find('!') > -1:
 			self.sqr_not(syn)
 
+	def process_mask(self, syn, inverted=False):
+
+		syn = syn.replace('[', '')
+		syn = syn.replace(']', '')
+		
+		val = 0
+
+		#negate first, else, mask...
+		if "!&" in syn and inverted is True:
+			syn = syn.replace('!&', '')
+			byte = int(syn, 16)
+			mask = byte & 0
+			val = mask
+		elif "&" in syn and inverted is False:
+			syn = syn.replace('&', '')
+			byte = int(syn, 16)
+			mask = byte & 255
+			val = mask
+
+		self.component_list.append(hex(val).replace('0x', '').zfill(2).replace('L', ''))
+	
 	def sqr_colon(self, syn):
 		#convert to ints and find mean value in range
 		if syn.find(':') > -1:
@@ -104,6 +125,30 @@ class Sig2ByteGenerator:
 				syn = signature[0:index+1]
 				self.process_curly(syn)
 			elif check_byte == '[':
+				# We may have a bitmask... deal with it here...
+				# 
+				# From matt palmer:
+				# DROID 6 should, in fact, be capable of identifying bit-fields, 
+				# although there has not been a signature which uses this so far.  
+				# The byteseek library which DROID uses to process signatures has 
+				# an "all-bitmask" operator &, and an "any-bitmask" operator ~.
+				# For example, if you wanted to specify that bit 4 must match 
+				# (but you don't care about the other bits), you could write 
+				# [&08].  Of if you wanted to specify that a byte must be odd, 
+				# then you could write [&01]. Or more complex multi-bit masks as 
+				# well. I guess you could also test for it not matching using the 
+				# DROID syntax for an inverted set !: [!&01].
+				check_inverted = signature[1:3]
+				if check_inverted == "!&":
+					index = signature.find(']')
+					syn = signature[1:index+1]
+					self.process_mask(syn, True)
+				else:
+					check_mask = signature[1:2]
+					if check_mask == "&":
+						index = signature.find(']')
+						syn = signature[0:index+1]
+						self.process_mask(syn)
 				index = signature.find(']')
 				syn = signature[0:index+1]
 				self.process_square(syn)
