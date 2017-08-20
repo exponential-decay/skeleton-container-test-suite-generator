@@ -9,6 +9,13 @@ import signature2bytegenerator
 from io import BytesIO
 from shutil import make_archive, rmtree
 
+class ContainerPart:
+	#Byte sequences written with: offset, minoff, maxoff, seq
+	offset = None
+	minoff = None
+	maxoff = None
+	seq = None
+
 class SkeletonContainerGenerator:
 
 	def __init__(self, containersig, standardsig, debug):
@@ -312,7 +319,13 @@ class SkeletonContainerGenerator:
 								cf.write("File empty. Data written by Skeleton Generator.")
 								cf.close()
 							else:
-								filetowrite = self.handlecontainersignaturefilesigs(binarysigs)
+								if cf is not None:
+									filetowrite = self.handlecontainersignaturefilesigs(binarysigs)
+									#if "23100" in cf.name: 
+									#	print "star"
+									#	filetowrite = self.starhandlecontainersignaturefilesigs(binarysigs)
+									#else:
+									#	filetowrite = self.handlecontainersignaturefilesigs(binarysigs)
 								if cf is not None:
 									cf.write(filetowrite.getvalue())									
 									cf.close()
@@ -362,13 +375,23 @@ class SkeletonContainerGenerator:
 		seq = ''
 		rightfrag = ''
 
+		subs = False
+		parts = []
+
 		for sigs in sigcoll:
+
 			offset = sigs.find('ByteSequence')
 			if offset is not None:
 				offset = offset.get('Reference')
 			subseq = sigs.findall('ByteSequence/SubSequence')
 			if subseq is not None:
-				for sequences in subseq:		
+
+				subs = True
+
+				for sequences in subseq:	
+
+					cp = ContainerPart() 
+	
 					val = sequences.get('SubSeqMinOffset')
 					minoff = 0 if val == None else val
 					val = sequences.get('SubSeqMaxOffset')
@@ -382,8 +405,19 @@ class SkeletonContainerGenerator:
 						rminoff = 0 if rightfrag.attrib['MinOffset'] == None else rightfrag.attrib['MinOffset']
 						seq = seq + '{' + rminoff + '}' + rightfrag.text
 
-					seq = self.convertbytesequence(seq)
-					bio = self.__writebytestream__(bio, offset, minoff, maxoff, seq)
+					cp.seq = self.convertbytesequence(seq)
+
+					cp.offset = offset
+					cp.minoff = minoff
+					cp.maxoff = maxoff
+					
+					parts.append(cp)
+
+		if subs == True:	
+			if len(parts) > 0:
+				for p in parts:
+					bio = self.__writebytestream__(bio, p.offset, p.minoff, p.maxoff, p.seq)
+
 		return bio
 
 	def __writebytestream__(self, bio, offset, minoff, maxoff, seq):
