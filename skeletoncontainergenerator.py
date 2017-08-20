@@ -11,6 +11,7 @@ from shutil import make_archive, rmtree
 
 class ContainerPart:
 	#Byte sequences written with: offset, minoff, maxoff, seq
+	pos = None
 	offset = None
 	minoff = None
 	maxoff = None
@@ -386,7 +387,8 @@ class SkeletonContainerGenerator:
 				for sequences in subseq:	
 
 					cp = ContainerPart() 
-	
+					
+					pos = sequences.get('Position')
 					val = sequences.get('SubSeqMinOffset')
 					minoff = 0 if val == None else val
 					val = sequences.get('SubSeqMaxOffset')
@@ -401,7 +403,7 @@ class SkeletonContainerGenerator:
 						seq = seq + '{' + rminoff + '}' + rightfrag.text
 
 					cp.seq = self.convertbytesequence(seq)
-
+					cp.pos = pos
 					cp.offset = offset
 					cp.minoff = minoff
 					cp.maxoff = maxoff
@@ -420,7 +422,7 @@ class SkeletonContainerGenerator:
 					if bofcount > 1:
 						sys.stderr.write(containerfilename + " has multiple BOF sequences" + "\n")
 						for p in parts:	
-							sys.stderr.write(str(p.offset) + " " + str(p.minoff) + " " + str(p.maxoff) + " " + str(p.seq) + " \n")
+							sys.stderr.write(str(p.offset) + " " + str(p.pos) + " " + str(p.minoff) + " " + str(p.maxoff) + " " + str(p.seq) + " \n")
 
 						bio = self.__writebytestream__(bio, p.offset, p.minoff, p.maxoff, p.seq)
 
