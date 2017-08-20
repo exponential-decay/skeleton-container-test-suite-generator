@@ -10,7 +10,7 @@ Jython will generate OLE2 files, and ZIP based files.
 
 Requires Jython with Apache POI on the CLASSPATH. Example command to run:
 
-jython -Dpython.path=$CLASSPATH skeletoncontainergenerator.py --con container-signature-20140717.xml --sig DROID_SignatureFile_V77.xml 
+    jython -Dpython.path=$CLASSPATH skeletoncontainergenerator.py --con container-signature-20140717.xml --sig DROID_SignatureFile_V77.xml 
 
 Example CLASSPATH: :/usr/bin/poi/poi-3.11-beta2/poi-3.11-beta2-20140822.jar
 
@@ -26,7 +26,7 @@ The results will currently tell you how many objects should have been output, pl
 
 Container objects output should match 1:1 in DROID with all current signatures at time of writing. 
 
-###License
+### License
 
 Copyright (c) 2014 Ross Spencer
 
