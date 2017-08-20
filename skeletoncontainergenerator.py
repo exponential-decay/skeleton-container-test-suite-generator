@@ -307,7 +307,7 @@ class SkeletonContainerGenerator:
 						for f in files:
 							path = f.find('Path')
 							#E.g. ID 4060 Microsoft Project 2007 OLE2 has empty inner filename
-       					#E.g. ID 10000 has directory encoded in path
+       						#E.g. ID 10000 has directory encoded in path
 							if path == None:
 								#Q. if path is none, do we still need to make a file pointer...
 								cf = self.handlecontainersignaturefilepaths('', containerfilename)
@@ -320,12 +320,7 @@ class SkeletonContainerGenerator:
 								cf.close()
 							else:
 								if cf is not None:
-									filetowrite = self.handlecontainersignaturefilesigs(binarysigs)
-									#if "23100" in cf.name: 
-									#	print "star"
-									#	filetowrite = self.starhandlecontainersignaturefilesigs(binarysigs)
-									#else:
-									#	filetowrite = self.handlecontainersignaturefilesigs(binarysigs)
+									filetowrite = self.handlecontainersignaturefilesigs(binarysigs, containerfilename)
 								if cf is not None:
 									cf.write(filetowrite.getvalue())									
 									cf.close()
@@ -364,7 +359,7 @@ class SkeletonContainerGenerator:
 				sys.stderr.write("Sequence not mapped not mapped: " + str(bytes) + '\n\n')
 		return bio
 
-	def handlecontainersignaturefilesigs(self, innerfile):
+	def handlecontainersignaturefilesigs(self, innerfile, containerfilename):
 			
 		bio = BytesIO()
 		sigcoll = innerfile.findall('InternalSignatureCollection/InternalSignature')
@@ -415,8 +410,24 @@ class SkeletonContainerGenerator:
 
 		if subs == True:	
 			if len(parts) > 0:
-				for p in parts:
-					bio = self.__writebytestream__(bio, p.offset, p.minoff, p.maxoff, p.seq)
+				if len(parts) > 1: 
+					# need to process the sequences for multiple BOF here...
+					bofcount = 0
+					for p in parts:
+						if "BOFoffset" in p.offset:
+							bofcount+=1
+
+					if bofcount > 1:
+						sys.stderr.write(containerfilename + " has multiple BOF sequences" + "\n")
+						for p in parts:	
+							sys.stderr.write(str(p.offset) + " " + str(p.minoff) + " " + str(p.maxoff) + " " + str(p.seq) + " \n")
+
+						bio = self.__writebytestream__(bio, p.offset, p.minoff, p.maxoff, p.seq)
+
+					print "---"
+
+				else:
+					bio = self.__writebytestream__(bio, parts[0].offset, parts[0].minoff, parts[0].maxoff, parts[0].seq)
 
 		return bio
 
