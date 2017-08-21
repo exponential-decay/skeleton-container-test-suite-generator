@@ -17,6 +17,11 @@ class ContainerPart:
 	maxoff = None
 	seq = None
 
+	#Test for equivalent positioning...
+	def __eq__(self, other): 
+		return self.pos == other.pos and self.offset == other.offset and self.minoff == other.minoff \
+			and self.maxoff == other.maxoff 
+
 class SkeletonContainerGenerator:
 
 	def __init__(self, containersig, standardsig, debug):
@@ -410,26 +415,50 @@ class SkeletonContainerGenerator:
 					
 					parts.append(cp)
 
+		# We gotta do some pre-processing...
 		if subs == True:	
 			if len(parts) > 0:
 				if len(parts) > 1: 
+
 					# need to process the sequences for multiple BOF here...
 					bofcount = 0
 					for p in parts:
 						if "BOFoffset" in p.offset:
 							bofcount+=1
 
-					if bofcount > 1:
-						sys.stderr.write(containerfilename + " has multiple BOF sequences" + "\n")
-						for p in parts:	
-							sys.stderr.write(str(p.offset) + " " + str(p.pos) + " " + str(p.minoff) + " " + str(p.maxoff) + " " + str(p.seq) + " \n")
-
-						bio = self.__writebytestream__(bio, p.offset, p.minoff, p.maxoff, p.seq)
-
+					# this is a bit hacky but it's gonna work...
+					if bofcount == 2:
+						bio = self.__preprocessbofs__(bio, parts, containerfilename)
+					elif bofcount > 2:
+						sys.stderr.write("Cannot yet handle more than two sequences...\n")
 					print "---"
 
 				else:
 					bio = self.__writebytestream__(bio, parts[0].offset, parts[0].minoff, parts[0].maxoff, parts[0].seq)
+
+		return bio
+
+	# pre-process BOF sequences where the PRONOM layout is confusing...
+	def __preprocessbofs__(self, bio, parts, containerfilename):
+		if parts[0] == parts[1]:
+			sys.stderr.write(containerfilename + " has equivalent BOF sequences" + "\n")
+			for p in parts:	
+				sys.stderr.write(str(p.offset) + " " + str(p.pos) + " " + str(p.minoff) + " " + str(p.maxoff) + " " + str(p.seq) + " \n")
+		elif int(parts[1].minoff) > 0: 
+			sys.stderr.write(containerfilename + " BOF two offset greater than zero" + "\n")
+			# create a new minimum offset...
+			new_minoff = int(parts[1].minoff) - len(parts[0].seq)/2
+			parts[1].minoff = str(new_minoff)
+			for p in parts:
+				print "min", p.minoff, "max", p.maxoff
+				print "len", len(p.seq)/2
+		else:
+			sys.stderr.write(containerfilename + " has multiple BOF sequences" + "\n")
+			for p in parts:	
+				sys.stderr.write(str(p.offset) + " " + str(p.pos) + " " + str(p.minoff) + " " + str(p.maxoff) + " " + str(p.seq) + " \n")
+
+		for p in parts:
+			bio = self.__writebytestream__(bio, p.offset, p.minoff, p.maxoff, p.seq)
 
 		return bio
 
