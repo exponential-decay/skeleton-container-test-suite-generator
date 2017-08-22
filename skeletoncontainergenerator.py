@@ -440,10 +440,16 @@ class SkeletonContainerGenerator:
 
 	# pre-process BOF sequences where the PRONOM layout is confusing...
 	def __preprocessbofs__(self, bio, parts, containerfilename):
+
+		#equiv flag	
+		equiv = False
+
 		if parts[0] == parts[1]:
+			equiv = True
 			sys.stderr.write(containerfilename + " has equivalent BOF sequences" + "\n")
 			for p in parts:	
 				sys.stderr.write(str(p.offset) + " " + str(p.pos) + " " + str(p.minoff) + " " + str(p.maxoff) + " " + str(p.seq) + " \n")
+			parts[0].maxoff = len(parts[0].seq)/2 + 1
 		elif int(parts[1].minoff) > 0: 
 			sys.stderr.write(containerfilename + " BOF two offset greater than zero" + "\n")
 			# create a new minimum offset...
@@ -458,17 +464,18 @@ class SkeletonContainerGenerator:
 				sys.stderr.write(str(p.offset) + " " + str(p.pos) + " " + str(p.minoff) + " " + str(p.maxoff) + " " + str(p.seq) + " \n")
 
 		for p in parts:
-			bio = self.__writebytestream__(bio, p.offset, p.minoff, p.maxoff, p.seq)
+			bio = self.__writebytestream__(bio, p.offset, p.minoff, p.maxoff, p.seq, equiv)
 
 		return bio
 
-	def __writebytestream__(self, bio, offset, minoff, maxoff, seq):
+	def __writebytestream__(self, bio, offset, minoff, maxoff, seq, equiv=False):
 		if seq != '':
 			sig2map = signature2bytegenerator.Sig2ByteGenerator()	#TODO: New instance or not?
 			if offset == 'BOFoffset':
-				if int(maxoff) > 0:
-					boffill = (int(maxoff) - int(minoff)) / 2
-					seq = '{' + str(boffill) + '}' + seq
+				if equiv == False:	#don't pad... potentially no space to pad...
+					if int(maxoff) > 0:
+						boffill = (int(maxoff) - int(minoff)) / 2
+						seq = '{' + str(boffill) + '}' + seq
 				bytes = sig2map.map_signature(minoff, seq, maxoff, 0)
 				#bio.seek(0)	#TODO: Handle BOF sequences properly
 				bio = self.dowriteseq(bio, bytes)
