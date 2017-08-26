@@ -453,8 +453,8 @@ class SkeletonContainerGenerator:
 		elif int(parts[1].minoff) > 0: 
 			sys.stderr.write(containerfilename + " BOF two offset greater than zero" + "\n")
 			# create a new minimum offset...
-			#new_minoff = int(parts[1].minoff) - len(parts[0].seq)/2
-			#parts[1].minoff = str(new_minoff)
+			new_minoff = int(parts[1].minoff) - len(parts[0].seq)/2
+			parts[1].minoff = str(new_minoff)
 			for p in parts:
 				print "min", p.minoff, "max", p.maxoff
 				print "len", len(p.seq)/2
