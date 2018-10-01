@@ -12,13 +12,13 @@ Requires Jython with Apache POI on the CLASSPATH. Example command to run:
 
     jython -Dpython.path=$CLASSPATH skeletoncontainergenerator.py --con container-signature-20140717.xml --sig DROID_SignatureFile_V77.xml 
 
-Example CLASSPATH: :/usr/bin/poi/poi-3.11-beta2/poi-3.11-beta2-20140822.jar
+Example CLASSPATH: `:/usr/bin/poi/poi-3.11-beta2/poi-3.11-beta2-20140822.jar`
 
 #### Python
 
 Running the application in Python means that you can only output ZIP based container objects. 
 
-python skeletoncontainergenerator.py --con container-signature-20140717.xml --sig DROID_SignatureFile_V77.xml 
+`python skeletoncontainergenerator.py --con container-signature-20140717.xml --sig DROID_SignatureFile_V77.xml` 
 
 #### Results
 
