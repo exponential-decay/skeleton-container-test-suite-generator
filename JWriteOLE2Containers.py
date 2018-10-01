@@ -3,7 +3,7 @@ import os
 from jarray import zeros
 from java.io import FileOutputStream, FileInputStream, ByteArrayOutputStream
 
-from org.apache.poi.poifs.filesystem import NPOIFSFileSystem
+from org.apache.poi.poifs.filesystem import POIFSFileSystem
 
 class WriteOLE2Containers():
 
@@ -12,23 +12,24 @@ class WriteOLE2Containers():
 		fin.read(buf)
 		print buf
 
-	def writeContainer(self, containerfoldername, outputfolder, outputfilename):
+	def writeContainer(
+			self, containerfoldername, outputfolder, outputfilename):
 
 		written = False
 
 		#we have folder name, written earlier
-		#foldername is filename!!	
+		#foldername is filename!!
 		if os.path.isdir(containerfoldername):
-	
+
 			fname = outputfolder + outputfilename
 
-			fs = NPOIFSFileSystem()
+			fs = POIFSFileSystem()
 			root = fs.getRoot();
 
 			#triplet ([Folder], [sub-dirs], [files])
 			for folder, subs, files in os.walk(containerfoldername):
 				if subs != []:
-					#TODO: cant't yet write directories		
+					#TODO: cant't yet write directories
 					break
 				else:
 					for f in files:

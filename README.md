@@ -1,30 +1,42 @@
 skeleton-container-test-suite-generator
 =======================================
 
-Amendment to the Skeleton Test Suite Generator, creates OLE2 and ZIP based oontainer files invoking the container
-matching mechanisms in The National Archive, UK's DROID file format identification tool. 
+Amendment to the Skeleton Test Suite Generator, creates OLE2 and ZIP based
+container files invoking the container matching mechanisms in The National
+Archive, UK's DROID file format identification tool.
 
 #### Jython
 
-Jython will generate OLE2 files, and ZIP based files. 
+Jython will generate OLE2 files, and ZIP based files.
 
 Requires Jython with Apache POI on the CLASSPATH. Example command to run:
 
-    jython -Dpython.path=$CLASSPATH skeletoncontainergenerator.py --con container-signature-20140717.xml --sig DROID_SignatureFile_V77.xml 
+    jython -Dpython.path=$CLASSPATH skeletoncontainergenerator.py \
+       --con container-signature-20140717.xml \
+       --sig DROID_SignatureFile_V77.xml
 
 Example CLASSPATH: `:/usr/bin/poi/poi-3.11-beta2/poi-3.11-beta2-20140822.jar`
 
+**Warning:** Jython must be installed on the host system. Standalone won't
+work. This [bug](http://bugs.jython.org/issue1422) in the Jython standalone
+package seems to be the problem. If you manage to make it work, let me know!
+
 #### Python
 
-Running the application in Python means that you can only output ZIP based container objects. 
+Running the application in Python means that you can only output ZIP based
+container objects.
 
-`python skeletoncontainergenerator.py --con container-signature-20140717.xml --sig DROID_SignatureFile_V77.xml` 
+    python skeletoncontainergenerator.py \
+      --con container-signature-20140717.xml
+      --sig DROID_SignatureFile_V77.xml
 
 #### Results
 
-The results will currently tell you how many objects should have been output, plus a rough summary of the numbers actually output. To be improved somewhat. 
+The results will currently tell you how many objects should have been output,
+plus a rough summary of the numbers actually output. To be improved somewhat.
 
-Container objects output should match 1:1 in DROID with all current signatures at time of writing. 
+Container objects output should match 1:1 in DROID with all current signatures
+at time of writing.
 
 ### License
 
@@ -58,7 +70,8 @@ freely, subject to the following restrictions:
 * fmt/61 a catch-all for Excel, fmt/60 more specific
 
 * x-fmt/259, ID 13000 identified as x-fmt/113, x-fmt/258, x-fmt/259
-* x-fmt/113, x-fmt/258, x-fmt/259 all share same signature ID, therefore signature.
+* x-fmt/113, x-fmt/258, x-fmt/259 all share same signature ID, therefore
+  signature.
 
 #### container-signatute-20110204.xml
 
@@ -66,7 +79,8 @@ freely, subject to the following restrictions:
 * fmt/61 a catch-all for Excel, fmt/60 more specific
 
 * x-fmt/259, ID 13000 identified as x-fmt/113, x-fmt/258, x-fmt/259
-* x-fmt/113, x-fmt/258, x-fmt/259 all share same signature ID, therefore signature.
+* x-fmt/113, x-fmt/258, x-fmt/259 all share same signature ID, therefore
+  signature.
 
 #### container-signature-20120611.xml
 
@@ -77,7 +91,8 @@ freely, subject to the following restrictions:
 * fmt/61 a catch-all for Excel, fmt/60 more specific
 
 * fmt/424, ID 9020 as fmt/140 and fmt/424
-* fmt/140, ID 9010 is less specific signature with no version info, capturing both
+* fmt/140, ID 9010 is less specific signature with no version info, capturing
+  both
 
 * x-fmt/258, ID 13010 as x-fmt/258 and x-fmt/442
 * x-fmt/442 less specific, missing 0x06 right fragment
@@ -86,7 +101,7 @@ freely, subject to the following restrictions:
 * x-fmt/442 less specific, missing 0x0B right fragment
 
 * PUIDS mapped to standard signature file incorrectly
-* x-fmt/442 is Form*Z Project File
+* x-fmt/442 is FormZ Project File
 * x-fmt/443 is Revit Family File
 * These files should be Visio Documents
 
