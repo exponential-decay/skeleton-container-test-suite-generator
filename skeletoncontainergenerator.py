@@ -18,15 +18,15 @@ class ContainerPart:
 	seq = None
 
 	#Test for equivalent positioning...
-	def __eq__(self, other): 
+	def __eq__(self, other):
 		return self.pos == other.pos and self.offset == other.offset and self.minoff == other.minoff \
-			and self.maxoff == other.maxoff 
+			and self.maxoff == other.maxoff
 
 class SkeletonContainerGenerator:
 
 	def __init__(self, containersig, standardsig, debug):
 
-		self.java = self.__runningjava__()		
+		self.java = self.__runningjava__()
 		self.olewrite = None
 
 		if not self.java:
@@ -38,7 +38,7 @@ class SkeletonContainerGenerator:
 		self.INTSIGCOLLECTIONOFFSET = 0
 
 		self.standardsig = standardsig
-		self.containersig = containersig	
+		self.containersig = containersig
 		self.debug = debug
 
 		#TODO: verify arguments provided are actual sig files...
@@ -46,7 +46,7 @@ class SkeletonContainerGenerator:
 
 		#TODO: Counts, e.g. no. container signatuers held in file
 		#TODO: If write folders don't exist, create...
-		
+
 		#stats
 		self.nocontainersigs = 0
 		self.zipcount = 0
@@ -65,8 +65,8 @@ class SkeletonContainerGenerator:
 
 	def __del__(self):
 		sys.stdout.write("No. container signatures identified: " + str(self.nocontainersigs) + "\n")
-		sys.stdout.write("No. zip-based signatures identified: " + str(self.zipcount) + "\n")		
-		sys.stdout.write("No. zip-based signatures written: " + str(self.zipwritten) + "\n")		
+		sys.stdout.write("No. zip-based signatures identified: " + str(self.zipcount) + "\n")
+		sys.stdout.write("No. zip-based signatures written: " + str(self.zipwritten) + "\n")
 		sys.stdout.write("No. ole2-based signatures identified: " + str(self.ole2count) + "\n")
 		sys.stdout.write("No. ole2-based signatures written: " + str(self.ole2written) + "\n")
 		sys.stdout.write("No. other methods identified: " + str(self.othercount) + "\n")
@@ -84,7 +84,7 @@ class SkeletonContainerGenerator:
 		if platform.system() == 'Java':
 			return True
 		else:
-			return False		
+			return False
 
 	def __createfolders__(self):
 		self.skeletoncontainerdir = "skeleton-container-suite/"
@@ -92,13 +92,13 @@ class SkeletonContainerGenerator:
 		self.zipfolder = "skeleton-container-suite/zip/"
 		self.ole2folder = "skeleton-container-suite/ole2/"
 		if not os.path.exists(self.skeletoncontainerdir):
-			os.mkdir(self.skeletoncontainerdir)  
+			os.mkdir(self.skeletoncontainerdir)
 		if not os.path.exists(self.skeletondebugfolder):
-			os.mkdir(self.skeletondebugfolder)  
+			os.mkdir(self.skeletondebugfolder)
 		if not os.path.exists(self.zipfolder):
-			os.mkdir(self.zipfolder)  
+			os.mkdir(self.zipfolder)
 		if not os.path.exists(self.ole2folder):
-			os.mkdir(self.ole2folder)  
+			os.mkdir(self.ole2folder)
 
 	def generateskeletonfiles(self):
 		container_id_to_puid_map = self.mapcontaineridstopuids(self.containertree)
@@ -112,11 +112,17 @@ class SkeletonContainerGenerator:
 		for folder in pathlist:
 			newpath = newpath + folder + '/'
 		if not os.path.exists(self.skeletondebugfolder + newpath):
-			os.makedirs(self.skeletondebugfolder + newpath)	
+			os.makedirs(self.skeletondebugfolder + newpath)
 		return filetocreate
 
-	def handlecreatefile(self, path):
-		skeletonfilepart = open(path, 'wb')
+	@staticmethod
+	def create_empty_file(path_):
+		path_ = os.path.join(path_, 'empty_skeleton_container_file')
+		with open(path_, 'wb') as fname:
+			return
+
+	def handlecreatefile(self, path_):
+		skeletonfilepart = open(path_, 'wb')
 		return skeletonfilepart
 
 	#TODO: make robust for multiple similar option syntax
@@ -132,7 +138,7 @@ class SkeletonContainerGenerator:
 			return ns
 
 	def convertbytesequence(self, sequence):
-		#source; https://gist.github.com/richardlehane/f71a0e8f15c99c805ec4 
+		#source; https://gist.github.com/richardlehane/f71a0e8f15c99c805ec4
 		#testsig = "10 00 00 00 'Word.Document.' ['6'-'7'] 00"
 
 		if "'" in sequence:
@@ -144,12 +150,12 @@ class SkeletonContainerGenerator:
 			l = ''.join(l).replace(' ', '').split("'")
 
 		ns = ""
-	
+
 		for i in range(len(l)):
 			#split assumes a space if starts/terminates with delimeter
 			#even number of single-quotes means every-other character needs converting
-			#no delimiter no split...	
-			if i % 2 != 0:		
+			#no delimiter no split...
+			if i % 2 != 0:
 				ns += "".join([hex(ord(x))[2:] for x in l[i]])
 			else:
 				# IF example: ['', 'office:version=', ' [22 27] ', '1.0', ' [22 27]']
@@ -158,7 +164,7 @@ class SkeletonContainerGenerator:
 					for v in vallist:
 						if v != '':
 							ns += v
-							break				
+							break
 				else:
 					ns += l[i]
 
@@ -172,7 +178,7 @@ class SkeletonContainerGenerator:
 		f = open(xmlfile, 'rb')
 		try:
 			tree = etree.parse(f)
-			f.close()		
+			f.close()
 			return tree.getroot()
 		except IOError as (errno, strerror):
 			sys.stderr.write("IO error({0}): {1}".format(errno, strerror) + '\n')
@@ -198,13 +204,13 @@ class SkeletonContainerGenerator:
 			if sigid not in dupes_tmp:
 				dupes_tmp.append(sigid)
 			else:
-				dupes.append(sigid)		
+				dupes.append(sigid)
 			if puid is not None:			#TODO: Why None?
-				container_id_to_puid_map[sigid] = puid			
+				container_id_to_puid_map[sigid] = puid
 
 		if len(dupes) > 0:
 			for d in dupes:
-				sys.stderr.write("Cannot write a skeleton container file for duplicate IDs: " + str(d) + '\n')		
+				sys.stderr.write("Cannot write a skeleton container file for duplicate IDs: " + str(d) + '\n')
 
 		return container_id_to_puid_map
 
@@ -262,9 +268,9 @@ class SkeletonContainerGenerator:
 					container_id_to_puid_map[id] = 'done'
 
 		#retrieve filename...
-		#fmt-x-sig-id-xxxx.ext	
+		#fmt-x-sig-id-xxxx.ext
 		for x in puid2idmapping:
-			if x in puidmapping:	
+			if x in puidmapping:
 				fmtid = puid2idmapping[x]
 				fmt = x
 				idfilenamedict[fmtid] = fmt.replace('/', '-') + '-container-signature-id-' + str(fmtid) + '.' + str(puidmapping[x])
@@ -274,9 +280,9 @@ class SkeletonContainerGenerator:
 	def packagezipcontainer(self, containerfilename):
 		# do not need a complicated mechanism needed for zip it seems...
 		fname = self.skeletondebugfolder + containerfilename
-		zipname = make_archive(self.zipfolder + containerfilename, format="zip", root_dir=fname)   	
+		zipname = make_archive(self.zipfolder + containerfilename, format="zip", root_dir=fname)
 		os.rename(zipname, zipname.rsplit('.', 1)[0])
-		#TODO: Actual gague of make_archive's success? 
+		#TODO: Actual gague of make_archive's success?
 		if zipname:
 			self.zipwritten += 1
 		else:
@@ -294,9 +300,9 @@ class SkeletonContainerGenerator:
 	def containersigfile(self, containertree, filenamedict):
 
 		for topelements in iter(containertree):
-			if topelements.tag == 'ContainerSignatures':			
+			if topelements.tag == 'ContainerSignatures':
 				#retrieving each container file type at this point...
-				#create bytestream to write to and write to file... 				
+				#create bytestream to write to and write to file...
 				for container in topelements:
 					containerid = container.get('Id')
 					containertype = container.get('ContainerType')
@@ -305,32 +311,33 @@ class SkeletonContainerGenerator:
 					cf = None
 					filetowrite = None
 
-					if containerid in filenamedict:	#TODO: Bug filtering too many filenmes/ids out, e.g. 1030, fmt/412
-						containerfilename = filenamedict[containerid]	
+					if containerid in filenamedict:	#TODO: Bug filtering too many filenames/ids out, e.g. 1030, fmt/412
+						containerfilename = filenamedict[containerid]
 
 						files = container.findall('Files/File')
-						
+
 						for f in files:
 							path = f.find('Path')
 							#E.g. ID 4060 Microsoft Project 2007 OLE2 has empty inner filename
        						#E.g. ID 10000 has directory encoded in path
 							if path == None:
 								#Q. if path is none, do we still need to make a file pointer...
-								cf = self.handlecontainersignaturefilepaths('', containerfilename)
+								cf = self.handlecontainersignaturefilepaths(None, containerfilename)
 							else:
-								cf = self.handlecontainersignaturefilepaths(path.text, containerfilename)					
+								cf = self.handlecontainersignaturefilepaths(path.text, containerfilename)
 
-							binarysigs = f.find('BinarySignatures')
-							if binarysigs == None:
-								cf.write("File empty. Data written by Skeleton Generator.")
-								cf.close()
-							else:
-								if cf is not None:
-									filetowrite = self.handlecontainersignaturefilesigs(binarysigs, containerfilename)
-								if cf is not None:
-									cf.write(filetowrite.getvalue())									
+							if cf:
+								binarysigs = f.find('BinarySignatures')
+								if binarysigs == None:
+									cf.write("File empty. Data written by Skeleton Generator.")
 									cf.close()
-								
+								else:
+									if cf is not None:
+										filetowrite = self.handlecontainersignaturefilesigs(binarysigs, containerfilename)
+									if cf is not None:
+										cf.write(filetowrite.getvalue())
+										cf.close()
+
 						#print containertype
 						if containertype == 'ZIP':
 							self.zipcount +=1
@@ -341,18 +348,22 @@ class SkeletonContainerGenerator:
 						else:
 							self.othercount+=1
 							sys.stderr.write("Unknown container format discovered: " + str(containertype) + "\n")
-	
+
 	def handlecontainersignaturefilepaths(self, innerfilename, containerfilename):
 		containerfilename = containerfilename + '/'
 		cf = None
-		if innerfilename == '':
+		if innerfilename == None:
 			sys.stderr.write("Cannot write file without a name: " + containerfilename + "\n")
 			#self.handlecreatedirectories(containerfilename)
 			#cf = self.handlecreatefile('files/' + containerfilename + '')
 		else:
 			containerfilename = containerfilename + innerfilename
 			self.handlecreatedirectories(containerfilename)
-			cf = self.handlecreatefile('skeleton-container-suite/skeleton-folders/' + containerfilename)
+			try:
+				cf = self.handlecreatefile('skeleton-container-suite/skeleton-folders/' + containerfilename)
+			except IOError:
+				self.create_empty_file('skeleton-container-suite/skeleton-folders/' + containerfilename)
+				return None
 		return cf
 
 	def dowriteseq(self, bio, bytes):
@@ -366,7 +377,7 @@ class SkeletonContainerGenerator:
 		return bio
 
 	def handlecontainersignaturefilesigs(self, innerfile, containerfilename):
-			
+
 		bio = BytesIO()
 		sigcoll = innerfile.findall('InternalSignatureCollection/InternalSignature')
 
@@ -389,10 +400,10 @@ class SkeletonContainerGenerator:
 
 				subs = True
 
-				for sequences in subseq:	
+				for sequences in subseq:
 
-					cp = ContainerPart() 
-					
+					cp = ContainerPart()
+
 					pos = sequences.get('Position')
 					val = sequences.get('SubSeqMinOffset')
 					minoff = 0 if val == None else val
@@ -412,13 +423,13 @@ class SkeletonContainerGenerator:
 					cp.offset = offset
 					cp.minoff = minoff
 					cp.maxoff = maxoff
-					
+
 					parts.append(cp)
 
 		# We gotta do some pre-processing...
-		if subs == True:	
+		if subs == True:
 			if len(parts) > 0:
-				if len(parts) > 1: 
+				if len(parts) > 1:
 
 					# need to process the sequences for multiple BOF here...
 					bofcount = 0
@@ -441,16 +452,16 @@ class SkeletonContainerGenerator:
 	# pre-process BOF sequences where the PRONOM layout is confusing...
 	def __preprocessbofs__(self, bio, parts, containerfilename):
 
-		#equiv flag	
+		#equiv flag
 		equiv = False
 
 		if parts[0] == parts[1]:
 			equiv = True
 			sys.stderr.write(containerfilename + " has equivalent BOF sequences" + "\n")
-			for p in parts:	
+			for p in parts:
 				sys.stderr.write(str(p.offset) + " " + str(p.pos) + " " + str(p.minoff) + " " + str(p.maxoff) + " " + str(p.seq) + " \n")
 			parts[0].maxoff = len(parts[0].seq)/2 + 1
-		elif int(parts[1].minoff) > 0: 
+		elif int(parts[1].minoff) > 0:
 			sys.stderr.write(containerfilename + " BOF two offset greater than zero" + "\n")
 			# create a new minimum offset...
 			new_minoff = int(parts[1].minoff) - len(parts[0].seq)/2
@@ -460,7 +471,7 @@ class SkeletonContainerGenerator:
 				print "len", len(p.seq)/2
 		else:
 			sys.stderr.write(containerfilename + " has multiple BOF sequences" + "\n")
-			for p in parts:	
+			for p in parts:
 				sys.stderr.write(str(p.offset) + " " + str(p.pos) + " " + str(p.minoff) + " " + str(p.maxoff) + " " + str(p.seq) + " \n")
 
 		for p in parts:
@@ -496,7 +507,7 @@ def skeletonfilegeneration(containersig, standardsig, debug):
 
 	skg = SkeletonContainerGenerator(containersig, standardsig, debug)
 	skg.generateskeletonfiles()
-	
+
 	#Jython issues calling class destructor...
 	if skg.java:		#TODO: Not appropriate way to invoke __del__()?
 		skg.__del__()
@@ -524,7 +535,7 @@ def main():
    #	Parse arguments into namespace object to reference later in the script
    global args
    args = parser.parse_args()
-   
+
    if args.con and args.sig:
 		skeletonfilegeneration(args.con, args.sig, args.debug)
    else:
