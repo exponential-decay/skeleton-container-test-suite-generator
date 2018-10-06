@@ -7,7 +7,8 @@ import xml.etree.ElementTree as etree
 from DroidStandardSigFileClass import DroidStandardSigFileClass
 import signature2bytegenerator
 from io import BytesIO
-from shutil import make_archive, rmtree
+from shutil import rmtree
+import zipfile
 
 class ContainerPart:
     #Byte sequences written with: offset, minoff, maxoff, seq
@@ -114,12 +115,6 @@ class SkeletonContainerGenerator:
         if not os.path.exists(self.skeletondebugfolder + newpath):
             os.makedirs(self.skeletondebugfolder + newpath)
         return filetocreate
-
-    @staticmethod
-    def create_empty_file(path_):
-        path_ = os.path.join(path_, 'empty_skeleton_container_file')
-        with open(path_, 'wb') as fname:
-            return
 
     def handlecreatefile(self, path_):
         skeletonfilepart = open(path_, 'wb')
@@ -280,13 +275,23 @@ class SkeletonContainerGenerator:
     def packagezipcontainer(self, containerfilename):
         # do not need a complicated mechanism needed for zip it seems...
         fname = self.skeletondebugfolder + containerfilename
-        zipname = make_archive(self.zipfolder + containerfilename, format="zip", root_dir=fname)
-        os.rename(zipname, zipname.rsplit('.', 1)[0])
-        #TODO: Actual gague of make_archive's success?
-        if zipname:
-            self.zipwritten += 1
-        else:
-            self.notwritten = self.notwritten.append(containerfilename)
+        zipname = "{}{}".format(self.zipfolder, containerfilename)
+        with zipfile.ZipFile(zipname, 'w') as myzip:
+            pluspath = ""
+            for root, subdirs, files in os.walk(fname):
+                if subdirs:
+                    for s_ in subdirs:
+                        pluspath = os.path.join(pluspath, s_)
+                        path_ = os.path.join(root, s_)
+                        myzip.write(path_, pluspath)
+                if files:
+                    for f_ in files:
+                        path_ = os.path.join(root, f_)
+                        myzip.write(path_, os.path.join(pluspath, f_))
+
+        # TODO: capture exceptions and provide actual measurement of archive's
+        # success.
+        self.zipwritten += 1
 
     def packageole2container(self, containerfilename):
         fname = self.skeletondebugfolder + containerfilename + '/'
@@ -362,7 +367,6 @@ class SkeletonContainerGenerator:
             try:
                 cf = self.handlecreatefile('skeleton-container-suite/skeleton-folders/' + containerfilename)
             except IOError:
-                self.create_empty_file('skeleton-container-suite/skeleton-folders/' + containerfilename)
                 return None
         return cf
 
