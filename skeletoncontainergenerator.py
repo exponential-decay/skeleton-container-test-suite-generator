@@ -318,15 +318,17 @@ class SkeletonContainerGenerator:
         with zipfile.ZipFile(zipname, 'w') as myzip:
             pluspath = ""
             for root, subdirs, files in os.walk(fname):
+                # Write files first, and then the subdirectories...
+                if files:
+                    for f_ in files:
+                        path_ = os.path.join(root, f_)
+                        myzip.write(path_, os.path.join(pluspath, f_))
                 if subdirs:
                     for s_ in subdirs:
                         pluspath = os.path.join(pluspath, s_)
                         path_ = os.path.join(root, s_)
                         myzip.write(path_, pluspath)
-                if files:
-                    for f_ in files:
-                        path_ = os.path.join(root, f_)
-                        myzip.write(path_, os.path.join(pluspath, f_))
+
 
         # TODO: capture exceptions and provide actual measurement of archive's
         # success.
@@ -415,9 +417,6 @@ class SkeletonContainerGenerator:
             sys.stderr.write(
                 "Cannot write file without a name: "
                 + containerfilename + "\n")
-            # TODO: REDUNDANT CODE?
-            # self.handlecreatedirectories(containerfilename)
-            # cf = self.handlecreatefile('files/' + containerfilename + '')
         else:
             containerfilename = containerfilename + innerfilename
             self.handlecreatedirectories(containerfilename)
