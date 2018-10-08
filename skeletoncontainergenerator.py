@@ -542,8 +542,8 @@ class SkeletonContainerGenerator:
             new_minoff = int(parts[1].minoff) - len(parts[0].seq)/2
             parts[1].minoff = str(new_minoff)
             for p in parts:
-                print("min", p.minoff, "max", p.maxoff)
-                print("len", len(p.seq)/2)
+                print("min: {} max: {}".format(p.minoff, p.maxoff))
+                print("len: {}".format(len(p.seq)/2))
         else:
             sys.stderr.write(
                 containerfilename + " has multiple BOF sequences" + "\n")
