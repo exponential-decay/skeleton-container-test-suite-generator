@@ -23,7 +23,7 @@ class WriteOLE2Containers:
         # we have folder name, written earlier, foldername is filename!!
         if os.path.isdir(containerfoldername):
 
-            fname = outputfolder + outputfilename
+            fname = os.path.join(outputfolder, outputfilename)
 
             fs = POIFSFileSystem()
             root = fs.getRoot()
@@ -34,14 +34,14 @@ class WriteOLE2Containers:
                     # TODO: cant't yet write directories
                     break
                 else:
-                    for f in files:
-                        fin = FileInputStream(folder + f)
+                    for file_ in files:
+                        fin = FileInputStream(os.path.join(folder, file_))
                         if fin.getChannel().size() == 0:
                             fin.close()
                             written = False
                             break
                         else:
-                            root.createDocument(f, fin)
+                            root.createDocument(file_, fin)
                             fin.close()
                             written = True
 
