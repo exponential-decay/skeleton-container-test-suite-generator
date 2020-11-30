@@ -319,26 +319,28 @@ class SkeletonContainerGenerator:
         return idfilenamedict
 
     def packagezipcontainer(self, containerfilename):
-        """Do not need a complicated mechanism needed for zip it seems..."""
+        """Package up the contents we need in our zip."""
         fname = self.skeletondebugfolder + containerfilename
-        zipname = "{}{}".format(self.zipfolder, containerfilename)
-        with zipfile.ZipFile(zipname, "w") as myzip:
-            pluspath = ""
-            for root, subdirs, files in os.walk(fname):
-                # Write files first, and then the subdirectories...
-                if files:
-                    for f_ in files:
-                        path_ = os.path.join(root, f_)
-                        myzip.write(path_, os.path.join(pluspath, f_))
-                if subdirs:
-                    for s_ in subdirs:
-                        pluspath = os.path.join(pluspath, s_)
-                        path_ = os.path.join(root, s_)
-                        myzip.write(path_, pluspath)
-
-        # TODO: capture exceptions and provide actual measurement of archive's
-        # success.
+        zip_name = "{}{}".format(self.zipfolder, containerfilename)
+        self.write_zip_contents(fname, zip_name)
         self.zipwritten += 1
+
+    @staticmethod
+    def write_zip_contents(zip_root, zip_name):
+        """Write the contents of our zip container directory to """
+        zip_contents = []
+        for dir_, _, files in os.walk(zip_root):
+            relative_dir = os.path.relpath(dir_, zip_root)
+            # If we end up with just a '.' we're at the root of the
+            # structure and so we don't want to write that.
+            if relative_dir != ".":
+                zip_contents.append(relative_dir)
+            for file_name in files:
+                relative_file = os.path.join(relative_dir, file_name)
+                zip_contents.append(relative_file)
+        with zipfile.ZipFile(zip_name, "w") as myzip:
+            for file_ in set(zip_contents):
+                myzip.write(filename=os.path.join(zip_root, file_), arcname=file_)
 
     def packageole2container(self, containerfilename):
         fname = self.skeletondebugfolder + containerfilename + "/"
