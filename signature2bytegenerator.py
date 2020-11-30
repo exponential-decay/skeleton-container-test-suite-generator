@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+from __future__ import print_function
+
+import sys
+
 import binascii
 import random
 
@@ -56,6 +61,10 @@ class Sig2ByteGenerator:
                 self.create_bytes(val)
 
     def process_square(self, syn):
+
+        if "-" in syn:
+            print("Replacing dash '-' in {}".format(syn), file=sys.stderr)
+            syn = syn.replace("-", ":")
 
         syn = syn.replace("[", "")
         syn = syn.replace("]", "")
@@ -128,9 +137,7 @@ class Sig2ByteGenerator:
             self.process_square(syn)
 
     def detailed_check(self, signature):
-
         index = 0
-
         if signature.__len__() > 0:
             check_byte = signature[0]
             if check_byte == "{":
