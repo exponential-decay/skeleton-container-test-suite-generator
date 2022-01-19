@@ -19,7 +19,7 @@ LOGFORMAT = (
 )
 DATEFORMAT = "%Y-%m-%d %H:%M:%S"
 
-logging.basicConfig(format=LOGFORMAT, datefmt=DATEFORMAT, level="INFO")
+logging.basicConfig(format=LOGFORMAT, datefmt=DATEFORMAT, level="DEBUG")
 
 
 class ContainerPart:
@@ -562,13 +562,12 @@ class SkeletonContainerGenerator:
                 print("min: {} max: {}".format(p.minoff, p.maxoff))
                 print("len: {}".format(len(p.seq) / 2))
         else:
-            out = "{} has multiple BOF sequences".format(containerfilename)
-            print(out, file=sys.stderr)
+            logging.info("File: '%s' has multiple BOF sequences", containerfilename)
             for p in parts:
                 out = "{} {} {} {} {}".format(
                     p.offset, p.pos, p.minoff, p.maxoff, p.seq
                 )
-                print(out, file=sys.stderr)
+                logging.debug(out)
 
         for p in parts:
             bio = self.__writebytestream__(
