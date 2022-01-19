@@ -316,7 +316,7 @@ class SkeletonContainerGenerator:
 
     @staticmethod
     def write_zip_contents(zip_root, zip_name):
-        """Write the contents of our zip container directory to """
+        """Write the contents of our zip container directory to a file."""
         zip_contents = []
         for dir_, _, files in os.walk(zip_root):
             relative_dir = os.path.relpath(dir_, zip_root)
@@ -359,56 +359,56 @@ class SkeletonContainerGenerator:
 
                     # TODO: Bug filtering too many filenames/ids out,
                     # e.g. 1030, fmt/412
-                    if containerid in filenamedict:
-                        containerfilename = filenamedict[containerid]
+                    if containerid not in filenamedict:
+                        continue
 
-                        files = container.findall("Files/File")
-                        for f in files:
-                            path = f.find("Path")
-                            # E.g. ID 4060 Microsoft Project 2007 OLE2 has
-                            # empty inner filename.
-                            # E.g. ID 10000 has directory encoded in path.
-                            if path is None:
-                                # Q. if path is none, do we still need to make
-                                # a file pointer..?
-                                cf = self.handlecontainersignaturefilepaths(
-                                    None, containerfilename
-                                )
-                            else:
-                                cf = self.handlecontainersignaturefilepaths(
-                                    path.text, containerfilename
-                                )
-                            if cf:
-                                binarysigs = f.find("BinarySignatures")
-                                if binarysigs is None:
-                                    cf.write(
-                                        "File empty. Data written by Skeleton Generator."
-                                    )
-                                    cf.close()
-                                else:
-                                    if cf is not None:
-                                        filetowrite = (
-                                            self.handlecontainersignaturefilesigs(
-                                                binarysigs, containerfilename
-                                            )
-                                        )
-                                    if cf is not None:
-                                        cf.write(filetowrite.getvalue())
-                                        cf.close()
+                    containerfilename = filenamedict[containerid]
 
-                        # Print containertype
-                        if containertype == "ZIP":
-                            self.zipcount += 1
-                            self.packagezipcontainer(containerfilename)
-                        elif containertype == "OLE2":
-                            self.ole2count += 1
-                            self.packageole2container(containerfilename)
-                        else:
-                            self.othercount += 1
-                            out = "Unknown container format discovered: {}".format(
-                                containertype
+                    files = container.findall("Files/File")
+                    for f in files:
+                        path = f.find("Path")
+                        # E.g. ID 4060 Microsoft Project 2007 OLE2 has
+                        # empty inner filename.
+                        # E.g. ID 10000 has directory encoded in path.
+                        if path is None:
+                            # Q. if path is none, do we still need to make
+                            # a file pointer..?
+                            cf = self.handlecontainersignaturefilepaths(
+                                None, containerfilename
                             )
-                            print(out, file=sys.stderr)
+                        else:
+                            cf = self.handlecontainersignaturefilepaths(
+                                path.text, containerfilename
+                            )
+                        if cf:
+                            binarysigs = f.find("BinarySignatures")
+                            if binarysigs is None:
+                                cf.write(
+                                    "File empty. Data written by Skeleton Generator."
+                                )
+                                cf.close()
+                            else:
+                                if cf is not None:
+                                    filetowrite = self.handlecontainersignaturefilesigs(
+                                        binarysigs, containerfilename
+                                    )
+                                if cf is not None:
+                                    cf.write(filetowrite.getvalue())
+                                    cf.close()
+
+                    # Print containertype
+                    if containertype == "ZIP":
+                        self.zipcount += 1
+                        self.packagezipcontainer(containerfilename)
+                    elif containertype == "OLE2":
+                        self.ole2count += 1
+                        self.packageole2container(containerfilename)
+                    else:
+                        self.othercount += 1
+                        out = "Unknown container format discovered: {}".format(
+                            containertype
+                        )
+                        print(out, file=sys.stderr)
 
     def handlecontainersignaturefilepaths(self, innerfilename, containerfilename):
         containerfilename = os.path.join(containerfilename)
