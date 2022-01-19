@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 
-import binascii
 import random
 import sys
 
@@ -186,7 +185,7 @@ class Sig2ByteGenerator:
 
     def process_signature(self, signature):
 
-        if self.check_syntax(signature) == True:
+        if self.check_syntax(signature) is True:
             i = 0
             for x in signature:
                 if not x.isalnum():  # are all alphanumeric

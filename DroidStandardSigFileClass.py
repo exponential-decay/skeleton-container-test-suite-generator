@@ -2,6 +2,7 @@
 
 from __future__ import print_function, unicode_literals
 
+import logging
 import xml.etree.ElementTree as etree
 
 
@@ -76,9 +77,8 @@ class DroidStandardSigFileClass:
             root = tree.getroot()
             return iter(root)
         except IOError as err:
-            sys.stderr.write("IOError: {1}\n".format(err))
-
-        return 0
+            logging.error(err)
+        return
 
     def __del__(self):
         if not self.sigfile.closed:

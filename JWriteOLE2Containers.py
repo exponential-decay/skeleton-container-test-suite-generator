@@ -5,7 +5,7 @@ from __future__ import print_function, unicode_literals
 import os
 
 from jarray import zeros
-from java.io import ByteArrayOutputStream, FileInputStream, FileOutputStream
+from java.io import ByteArrayOutputStream, FileInputStream, FileOutputStream  # noqa
 from org.apache.poi.poifs.filesystem import POIFSFileSystem
 
 
