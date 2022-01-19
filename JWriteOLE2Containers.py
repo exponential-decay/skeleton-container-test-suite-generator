@@ -6,7 +6,6 @@ import os
 
 from jarray import zeros
 from java.io import ByteArrayOutputStream, FileInputStream, FileOutputStream
-
 from org.apache.poi.poifs.filesystem import POIFSFileSystem
 
 

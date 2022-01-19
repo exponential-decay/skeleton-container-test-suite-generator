@@ -1,6 +1,7 @@
 import argparse
-from lxml import etree
 import sys
+
+from lxml import etree
 
 
 def preprocessxml(containersig, standardsig):

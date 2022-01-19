@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 
-import sys
-
 import binascii
 import random
+import sys
 
 
 class Sig2ByteGenerator:

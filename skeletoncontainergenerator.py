@@ -3,17 +3,16 @@ from __future__ import print_function
 
 import argparse
 import collections
-from io import BytesIO
 import logging
 import os
-from shutil import rmtree
 import sys
-import zipfile
-
 import xml.etree.ElementTree as etree
+import zipfile
+from io import BytesIO
+from shutil import rmtree
 
-from DroidStandardSigFileClass import DroidStandardSigFileClass
 import signature2bytegenerator
+from DroidStandardSigFileClass import DroidStandardSigFileClass
 
 LOGFORMAT = (
     "%(asctime)-15s %(levelname)s: %(filename)s:%(lineno)s:%(funcName)s(): %(message)s"
