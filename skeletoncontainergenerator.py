@@ -4,6 +4,7 @@ from __future__ import print_function
 import argparse
 import collections
 from io import BytesIO
+import logging
 import os
 from shutil import rmtree
 import sys
@@ -13,6 +14,13 @@ import xml.etree.ElementTree as etree
 
 from DroidStandardSigFileClass import DroidStandardSigFileClass
 import signature2bytegenerator
+
+LOGFORMAT = (
+    "%(asctime)-15s %(levelname)s: %(filename)s:%(lineno)s:%(funcName)s(): %(message)s"
+)
+DATEFORMAT = "%Y-%m-%d %H:%M:%S"
+
+logging.basicConfig(format=LOGFORMAT, datefmt=DATEFORMAT, level="INFO")
 
 
 class ContainerPart:
