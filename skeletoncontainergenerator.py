@@ -514,7 +514,7 @@ class SkeletonContainerGenerator:
                 if "BOFoffset" in p.offset:
                     bofcount += 1
             # this is a bit hacky but it's gonna work...
-            bio = self.__preprocessbofs__(bio, parts, containerfilename)
+            bio = self._preprocessbofs(bio, parts, containerfilename)
             if bofcount > 2:
                 out = "Check: {}: Code might not yet handle more than two sequences...".format(
                     containerfilename
@@ -532,36 +532,34 @@ class SkeletonContainerGenerator:
 
         return bio
 
-    def __preprocessbofs__(self, bio, parts, containerfilename):
+    def _preprocessbofs(self, bio, parts, containerfilename):
         """Pre-process BOF sequences where the PRONOM layout is confusing..."""
         equiv = False
 
         if parts[0] == parts[1]:
             equiv = True
-            out = "{} has equivalent BOF sequences".format(containerfilename)
-            print(out, file=sys.stderr)
+            logging.debug("File '%s' has equivalent BOF sequences", containerfilename)
             for p in parts:
-                out = "{} {} {} {} {}".format(
-                    p.offset, p.pos, p.minoff, p.maxoff, p.seq
+                logging.debug(
+                    "%s %s %s %s %s", p.offset, p.pos, p.minoff, p.maxoff, p.seq
                 )
-                print(out, file=sys.stderr)
             parts[0].maxoff = len(parts[0].seq) / 2 + 1
         elif int(parts[1].minoff) > 0:
-            out = "{} BOF two offset greater than zero".format(containerfilename)
-            print(out, file=sys.stderr)
+            logging.debug(
+                "File '%s' BOF two offset greater than zero", containerfilename
+            )
             # create a new minimum offset...
             new_minoff = int(parts[1].minoff) - len(parts[0].seq) / 2
             parts[1].minoff = str(new_minoff)
             for p in parts:
-                print("min: {} max: {}".format(p.minoff, p.maxoff))
-                print("len: {}".format(len(p.seq) / 2))
+                logging.debug("min: {} max: {}".format(p.minoff, p.maxoff))
+                logging.debug("len: {}".format(len(p.seq) / 2))
         else:
             logging.info("File: '%s' has multiple BOF sequences", containerfilename)
             for p in parts:
-                out = "{} {} {} {} {}".format(
-                    p.offset, p.pos, p.minoff, p.maxoff, p.seq
+                logging.debug(
+                    "%s %s %s %s %s", p.offset, p.pos, p.minoff, p.maxoff, p.seq
                 )
-                logging.debug(out)
 
         for p in parts:
             bio = self.__writebytestream__(
