@@ -504,37 +504,31 @@ class SkeletonContainerGenerator:
 
                     parts.append(cp)
 
-        # We gotta do some pre-processing.
-        if subs is True:
-            if len(parts) > 0:
-                if len(parts) > 1:
-
-                    # Need to process the sequences for multiple BOF here.
-                    bofcount = 0
-                    for p in parts:
-                        if "BOFoffset" in p.offset:
-                            bofcount += 1
-
-                    # this is a bit hacky but it's gonna work...
-                    bio = self.__preprocessbofs__(bio, parts, containerfilename)
-
-                    if bofcount > 2:
-                        out = "Check: {}: Code might not yet handle more than two sequences...".format(
-                            containerfilename
-                        )
-                        print(out, file=sys.stderr)
-
-                    print("---", file=sys.stderr)
-
-                else:
-                    bio = self.__writebytestream__(
-                        containerfilename,
-                        bio,
-                        parts[0].offset,
-                        parts[0].minoff,
-                        parts[0].maxoff,
-                        parts[0].seq,
-                    )
+        # Pre-processing of sequences in signature file.
+        if subs is not True:
+            return bio
+        if len(parts) > 1:
+            # Need to process the sequences for multiple BOF here.
+            bofcount = 0
+            for p in parts:
+                if "BOFoffset" in p.offset:
+                    bofcount += 1
+            # this is a bit hacky but it's gonna work...
+            bio = self.__preprocessbofs__(bio, parts, containerfilename)
+            if bofcount > 2:
+                out = "Check: {}: Code might not yet handle more than two sequences...".format(
+                    containerfilename
+                )
+                logging.error(out)
+            return bio
+        bio = self.__writebytestream__(
+            containerfilename,
+            bio,
+            parts[0].offset,
+            parts[0].minoff,
+            parts[0].maxoff,
+            parts[0].seq,
+        )
 
         return bio
 
