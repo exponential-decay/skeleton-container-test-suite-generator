@@ -516,7 +516,7 @@ class SkeletonContainerGenerator:
                 )
                 logging.error(out)
             return bio
-        bio = self.__writebytestream__(
+        bio = self._writebytestream(
             containerfilename,
             bio,
             parts[0].offset,
@@ -533,33 +533,42 @@ class SkeletonContainerGenerator:
         """
         logging.info("Fixing up multiple BOF sequences for: '%s'", containerfilename)
         logging.debug("Length of parts: %s", len(parts))
-        for p in parts:
-            logging.debug("%s %s %s %s %s", p.offset, p.pos, p.minoff, p.maxoff, p.seq)
+        for part in parts:
+            logging.debug(
+                "%s %s %s %s %s",
+                part.offset,
+                part.pos,
+                part.minoff,
+                part.maxoff,
+                part.seq,
+            )
         # Collapse sequences into one, using {x-y} syntax to our
         # advantage to then create our skeleton file.
-        for idx, p in enumerate(parts):
+        for idx, part in enumerate(parts):
             if idx == 0:
                 continue
-            parts[0].seq = "%s{%s-%s}%s" % (parts[0].seq, p.minoff, p.maxoff, p.seq)
+            parts[0].seq = "%s{%s-%s}%s" % (
+                parts[0].seq,
+                part.minoff,
+                part.maxoff,
+                part.seq,
+            )
         p_tmp = parts[0]
         parts = []
         parts.append(p_tmp)
-        for p in parts:
-            bio = self.__writebytestream__(
-                containerfilename, bio, p.offset, p.minoff, p.maxoff, p.seq, True
+        for part in parts:
+            bio = self._writebytestream(
+                containerfilename, bio, part.offset, part.minoff, part.maxoff, part.seq
             )
         return bio
 
-    def __writebytestream__(
-        self, containerfilename, bio, offset, minoff, maxoff, seq, equiv=False
-    ):
+    def _writebytestream(self, containerfilename, bio, offset, minoff, maxoff, seq):
+        """Interpret the offsets and sequences provided to the function
+        and write the results to a byte object for writing to file.
+        """
         if seq != "":
             sig2map = signature2bytegenerator.Sig2ByteGenerator()
             if offset == "BOFoffset":
-                if equiv is False:
-                    if int(maxoff) > 0:
-                        boffill = (int(maxoff) - int(minoff)) / 2
-                        seq = "{{{}}}{}".format(boffill, seq)
                 bytes = sig2map.map_signature(minoff, seq, maxoff, 0)
                 bio = self.dowriteseq(containerfilename, bio, bytes)
             elif offset == "EOFoffset":
