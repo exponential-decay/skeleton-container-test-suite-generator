@@ -514,7 +514,7 @@ class SkeletonContainerGenerator:
                 if "BOFoffset" in p.offset:
                     bofcount += 1
             # this is a bit hacky but it's gonna work...
-            bio = self._preprocessbofs(bio, parts, containerfilename)
+            bio = self._process_bofs_greater_thn_one(bio, parts, containerfilename)
             if bofcount > 2:
                 out = "Check: {}: Code might not yet handle more than two sequences...".format(
                     containerfilename
@@ -532,40 +532,27 @@ class SkeletonContainerGenerator:
 
         return bio
 
-    def _preprocessbofs(self, bio, parts, containerfilename):
-        """Pre-process BOF sequences where the PRONOM layout is confusing..."""
-        equiv = False
-
-        if parts[0] == parts[1]:
-            equiv = True
-            logging.debug("File '%s' has equivalent BOF sequences", containerfilename)
-            for p in parts:
-                logging.debug(
-                    "%s %s %s %s %s", p.offset, p.pos, p.minoff, p.maxoff, p.seq
-                )
-            parts[0].maxoff = len(parts[0].seq) / 2 + 1
-        elif int(parts[1].minoff) > 0:
-            logging.debug(
-                "File '%s' BOF two offset greater than zero", containerfilename
-            )
-            # create a new minimum offset...
-            new_minoff = int(parts[1].minoff) - len(parts[0].seq) / 2
-            parts[1].minoff = str(new_minoff)
-            for p in parts:
-                logging.debug("min: {} max: {}".format(p.minoff, p.maxoff))
-                logging.debug("len: {}".format(len(p.seq) / 2))
-        else:
-            logging.info("File: '%s' has multiple BOF sequences", containerfilename)
-            for p in parts:
-                logging.debug(
-                    "%s %s %s %s %s", p.offset, p.pos, p.minoff, p.maxoff, p.seq
-                )
-
+    def _process_bofs_greater_thn_one(self, bio, parts, containerfilename):
+        """Pre-process BOF sequences where there are multiple BOF
+        sequences defined in PRONOM.
+        """
+        logging.info("Fixing up multiple BOF sequences for: '%s'", containerfilename)
+        logging.debug("Length of parts: %s", len(parts))
+        for p in parts:
+            logging.debug("%s %s %s %s %s", p.offset, p.pos, p.minoff, p.maxoff, p.seq)
+        # Collapse sequences into one, using {x-y} syntax to our
+        # advantage to then create our skeleton file.
+        for idx, p in enumerate(parts):
+            if idx == 0:
+                continue
+            parts[0].seq = "%s{%s-%s}%s" % (parts[0].seq, p.minoff, p.maxoff, p.seq)
+        p_tmp = parts[0]
+        parts = []
+        parts.append(p_tmp)
         for p in parts:
             bio = self.__writebytestream__(
-                containerfilename, bio, p.offset, p.minoff, p.maxoff, p.seq, equiv
+                containerfilename, bio, p.offset, p.minoff, p.maxoff, p.seq, True
             )
-
         return bio
 
     def __writebytestream__(
