@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 
+import logging
 import random
-import sys
 
 
 class Sig2ByteGenerator:
@@ -61,7 +61,7 @@ class Sig2ByteGenerator:
     def process_square(self, syn):
 
         if "-" in syn:
-            print("Replacing dash '-' in {}".format(syn), file=sys.stderr)
+            logging.debug("Replacing dash '-' in {}".format(syn))
             syn = syn.replace("-", ":")
 
         syn = syn.replace("[", "")

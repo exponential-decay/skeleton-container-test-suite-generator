@@ -19,8 +19,6 @@ LOGFORMAT = (
 )
 DATEFORMAT = "%Y-%m-%d %H:%M:%S"
 
-logging.basicConfig(format=LOGFORMAT, datefmt=DATEFORMAT, level="DEBUG")
-
 
 class ContainerPart:
     """Maintain state amongst container parts."""
@@ -53,7 +51,7 @@ class SkeletonContainerGenerator:
         self.olewrite = None
 
         if not self.java:
-            print("Not using Jython. Writing ZIP containers only.")
+            logging.info("Not using Jython. Writing ZIP containers only.")
         else:
             from JWriteOLE2Containers import WriteOLE2Containers
 
@@ -208,7 +206,7 @@ class SkeletonContainerGenerator:
             f.close()
             return tree.getroot()
         except IOError as err:
-            print("IO error: {}".format(err), file=sys.stderr)
+            logging.error("IO error: {}".format(err))
             f.close()
 
     def mapcontaineridstopuids(self, containertree):
@@ -236,10 +234,10 @@ class SkeletonContainerGenerator:
 
         if len(dupes) > 0:
             for duplicate in dupes:
-                out = "Cannot write a skeleton container file for duplicate IDs: {}".format(
-                    duplicate
+                logging.error(
+                    "Cannot write a skeleton container file for duplicate IDs: %s",
+                    duplicate,
                 )
-                print(out, file=sys.stderr)
 
         return container_id_to_puid_map
 
@@ -249,12 +247,11 @@ class SkeletonContainerGenerator:
         for p in puiddict:
             if puiddict[p] == "notfound":
                 self.invalidpuids.append(p)
-                print(
-                    "PUID values not found in standard signature file: {}".format(p),
-                    file=sys.stderr,
+                logging.error(
+                    "PUID values not found in standard signature file: {}".format(p)
                 )
-            else:
-                puiddict_tmp[p] = puiddict[p]
+                continue
+            puiddict_tmp[p] = puiddict[p]
         return puiddict_tmp
 
     def removeinvalidpuidsfromidpuidmapping(self, puid_id_map):
@@ -412,18 +409,16 @@ class SkeletonContainerGenerator:
                         self.packageole2container(containerfilename)
                     else:
                         self.othercount += 1
-                        out = "Unknown container format discovered: {}".format(
-                            containertype
+                        logging.error(
+                            "Unknown container format discovered: %s", containertype
                         )
-                        print(out, file=sys.stderr)
 
     def handlecontainersignaturefilepaths(self, innerfilename, containerfilename):
         containerfilename = os.path.join(containerfilename)
         cf = None
         if innerfilename is None:
-            print(
-                "Cannot write file without a name: {}".format(containerfilename),
-                file=sys.stderr,
+            logging.error(
+                "Cannot write file without a name: {}".format(containerfilename)
             )
         else:
             containerfilename = os.path.join(containerfilename, innerfilename)
@@ -447,7 +442,7 @@ class SkeletonContainerGenerator:
                 out = "Sequence for file {} not mapped: {} with err: {}".format(
                     containerfilename, str(byte), err
                 )
-                print(out, file=sys.stderr)
+                logging.error(out)
         return bio
 
     def handlecontainersignaturefilesigs(self, innerfile, containerfilename):
@@ -582,22 +577,34 @@ class SkeletonContainerGenerator:
 
 
 def skeletonfilegeneration(containersig, standardsig, debug):
-
+    """Primary runner for skeleton suite generation."""
+    if debug.lower() == "true":
+        logging.basicConfig(format=LOGFORMAT, datefmt=DATEFORMAT, level="DEBUG")
+    else:
+        logging.basicConfig(format=LOGFORMAT, datefmt=DATEFORMAT, level="INFO")
     skg = SkeletonContainerGenerator(containersig, standardsig, debug)
     skg.generateskeletonfiles()
-
-    # Jython issues calling class destructor...
-    if skg.java:  # TODO: Not appropriate way to invoke __del__()?
+    # Jython issues calling class destructor, so called manually,
+    # however, this should probably be fixed.
+    if skg.java:
         skg.__del__()
-
     sys.exit(0)
 
 
 def main():
+    """Primary entry point for skeleton suite generation.
 
-    # Usage:  --con [container signature file]
-    # Usage:  --sig [standard signature file]
-    # Handle command line arguments for the script
+        Usage:  --con [container signature file]
+        Usage:  --sig [standard signature file]
+        Usage:  --debug [optional] (Outputs debug folders and logging)
+
+        Example:
+
+            jython -Dpython.path=poi-4.0.0.jar:xercesImpl.jar skeletoncontainergenerator.py \
+               --con sigs/container-signature-20211216.xml \
+               --sig sigs/DROID_SignatureFile_V100.xml \
+               --debug true
+    """
     parser = argparse.ArgumentParser(
         description="Generate skeleton container files from DROID "
         "container signatures."
