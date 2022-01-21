@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+
+"""Skeleton Container Generator will create skeleton files based on the
+PRONOM signature standard for utilities such as DROID or Siegfried.
+"""
+
 from __future__ import print_function
 
 import argparse

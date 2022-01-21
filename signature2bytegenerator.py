@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+
+"""Singature2ByteGenerator will convert signature sequences to byte
+sequences that can be written to a file.
+"""
+
 from __future__ import print_function
 
 import logging
@@ -6,6 +11,9 @@ import random
 
 
 class Sig2ByteGenerator:
+    """Sig2ByteGenerator encapsulates our byte conversion operations.
+    """
+
     def __init__(self):
         self.component_list = []
         self.open_syntax = ["{", "(", "[", "?", "*"]
