@@ -1,0 +1,8 @@
+[MESSAGES CONTROL]
+
+disable=
+		C0116, 	# Missing docstring.
+		C0115,  # Missing class docstring.
+		C0114,  # Missing module docstring.
+		C0209,  # Consider f-strings - not compatible with Jython2.
+		C0301,  # Line too-long - Black formatting requires this.
