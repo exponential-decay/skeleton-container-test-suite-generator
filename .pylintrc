@@ -6,3 +6,8 @@ disable=
 		C0114,  # Missing module docstring.
 		C0209,  # Consider f-strings - not compatible with Jython2.
 		C0301,  # Line too-long - Black formatting requires this.
+		R0903,  # Too-few public methods in a class.
+		W0511,  # tmp, TODO was found by Pylint.
+		R0902,  # tmp, too many instance attrs (points to bad architecture).
+		C0103,  # tmp, module name doesn't conform to Python snake_case.
+		R1732,  # tmp, use 'with' opening resources, (can make clearer overall structure).

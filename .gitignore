@@ -1,0 +1,7 @@
+*.pyc
+*.jar
+poi*
+skeleton-container-suite*
+howto
+*$py.class
+sigs/*

@@ -1,52 +1,55 @@
 # -*- coding: utf-8 -*-
 
+"""Module for collecting functions associated with writing OLE2 based
+skeletons.
+"""
+
 from __future__ import print_function, unicode_literals
 
+import logging
 import os
 
-from jarray import zeros
-from java.io import ByteArrayOutputStream, FileInputStream, FileOutputStream  # noqa
-from org.apache.poi.poifs.filesystem import POIFSFileSystem
+try:
+    from java.io import FileInputStream, FileOutputStream
+    from org.apache.poi.poifs.filesystem import POIFSFileSystem
+except ImportError as err:
+    logging.error(
+        "Problem importing Jython libraries, ensure Jython is being used: %s", err
+    )
+    raise err
 
 
 class WriteOLE2Containers:
-    def __debugfos__(fos, bufsize):
-        buf = zeros(bufsize, "b")
-        fos.read(buf)
-        print(buf)
+    """OLE2 Container writing class to encapsulate write functions for
+    OLE2 based objects.
+    """
 
-    def writeContainer(self, containerfoldername, outputfolder, outputfilename):
-
+    @staticmethod
+    def writeContainer(containerfoldername, outputfolder, outputfilename):
+        """Write OLE2 container file."""
         written = False
-
-        # we have folder name, written earlier, foldername is filename!!
-        if os.path.isdir(containerfoldername):
-
-            fname = os.path.join(outputfolder, outputfilename)
-
-            fs = POIFSFileSystem()
-            root = fs.getRoot()
-
-            # triplet ([Folder], [sub-dirs], [files])
-            for folder, subs, files in os.walk(containerfoldername):
-                if subs != []:
-                    # TODO: cant't yet write directories
+        # We have a folder name, written earlier, folder name is filename...
+        if not os.path.isdir(containerfoldername):
+            return written
+        fname = os.path.join(outputfolder, outputfilename)
+        fs = POIFSFileSystem()
+        root = fs.getRoot()
+        # Triplet ([Folder], [sub-dirs], [files]).
+        for folder, subs, files in os.walk(containerfoldername):
+            if subs != []:
+                logging.error("Cannot yet write directories using this utility")
+                break
+            for file_ in files:
+                fin = FileInputStream(os.path.join(folder, file_))
+                if fin.getChannel().size() == 0:
+                    fin.close()
+                    written = False
                     break
-                else:
-                    for file_ in files:
-                        fin = FileInputStream(os.path.join(folder, file_))
-                        if fin.getChannel().size() == 0:
-                            fin.close()
-                            written = False
-                            break
-                        else:
-                            root.createDocument(file_, fin)
-                            fin.close()
-                            written = True
-
-            if written is True:
-                fos = FileOutputStream(fname)
-                fs.writeFilesystem(fos)
-                fs.close()
-
+                root.createDocument(file_, fin)
+                fin.close()
+                written = True
+        if written is True:
+            fos = FileOutputStream(fname)
+            fs.writeFilesystem(fos)
+            fs.close()
         return written

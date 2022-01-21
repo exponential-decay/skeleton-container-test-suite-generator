@@ -10,6 +10,7 @@ import argparse
 import collections
 import logging
 import os
+import platform
 import sys
 import xml.etree.ElementTree as etree
 import zipfile
@@ -23,6 +24,17 @@ LOGFORMAT = (
     "%(asctime)-15s %(levelname)s: %(filename)s:%(lineno)s:%(funcName)s(): %(message)s"
 )
 DATEFORMAT = "%Y-%m-%d %H:%M:%S"
+
+logging.basicConfig(format=LOGFORMAT, datefmt=DATEFORMAT, level="INFO")
+
+OLE_WRITE = None
+java = bool(platform.system() == "Java")
+if not java:
+    logging.info("Not using Jython. Writing ZIP containers only.")
+else:
+    from JWriteOLE2Containers import WriteOLE2Containers
+
+    OLE_WRITE = WriteOLE2Containers()
 
 
 class ContainerPart:
@@ -52,24 +64,14 @@ class SkeletonContainerGenerator:
     def __init__(self, containersig, standardsig, debug):
         """Initialize stats."""
 
-        self.java = self.__runningjava__()
-        self.olewrite = None
-
-        if not self.java:
-            logging.info("Not using Jython. Writing ZIP containers only.")
-        else:
-            from JWriteOLE2Containers import WriteOLE2Containers
-
-            self.olewrite = WriteOLE2Containers()
-
-        self.INTSIGCOLLECTIONOFFSET = 0
+        self.ole_write = OLE_WRITE
 
         self.standardsig = standardsig
         self.containersig = containersig
         self.debug = debug
 
         # TODO: verify arguments provided are actual sig files...
-        self.containertree = self.__parse_xml__(self.containersig)
+        self.containertree = self._parse_xml(self.containersig)
 
         # TODO: Counts, e.g. no. container signatuers held in file
         # TODO: If write folders don't exist, create...
@@ -88,9 +90,13 @@ class SkeletonContainerGenerator:
         # container signature file
         self.invalidpuids = []
 
-        self.__createfolders__()
+        self._createfolders()
 
     def __del__(self):
+        """Skeleton generator deconstructor.
+
+        Write out statistics and clean-up unused directories and files.
+        """
         print("No. container signatures identified: {}".format(self.nocontainersigs))
         print("No. zip-based signatures identified: {}".format(self.zipcount))
         print("No. zip-based signatures written: {}".format(self.zipwritten))
@@ -106,19 +112,12 @@ class SkeletonContainerGenerator:
             print("Not written:")
             for nooutput in self.notwritten:
                 print("  {}".format(nooutput))
-
+        if not java:
+            rmtree(self.ole2folder)
         if not self.debug:
             rmtree(self.skeletondebugfolder)
 
-    def __runningjava__(self):
-        import platform
-
-        if platform.system() == "Java":
-            return True
-        else:
-            return False
-
-    def __createfolders__(self):
+    def _createfolders(self):
         self.skeletoncontainerdir = os.path.join("skeleton-container-suite")
         self.skeletondebugfolder = os.path.join(
             "skeleton-container-suite", "skeleton-folders"
@@ -150,21 +149,16 @@ class SkeletonContainerGenerator:
             os.makedirs(skeleton_debug_folder)
         return filetocreate
 
-    def handlecreatefile(self, path_):
-        skeletonfilepart = open(path_, "wb")
-        return skeletonfilepart
-
-    # TODO: make robust for multiple similar option syntax
-    # TODO: unit tests will help understanding different scenarios
-    def __replaceoptionsyntax__(self, ns):
-        part1 = ns.find("[")
-        part2 = ns.find("]") + 1
-        replacement = ns[part1:part2].replace("[", "").replace("]", "").split("-", 1)[0]
-        ns = "{}{}{}".format(ns[0:part1], replacement, ns[part2:])
-        if "[" in ns:
-            self.__replaceoptionsyntax__(ns)
-        else:
-            return ns
+    def _replaceoptionsyntax(self, namespace):
+        part1 = namespace.find("[")
+        part2 = namespace.find("]") + 1
+        replacement = (
+            namespace[part1:part2].replace("[", "").replace("]", "").split("-", 1)[0]
+        )
+        namespace = "{}{}{}".format(namespace[0:part1], replacement, namespace[part2:])
+        if "[" in namespace:
+            self._replaceoptionsyntax(namespace)
+        return namespace
 
     def convertbytesequence(self, sequence):
         # source; https://gist.github.com/richardlehane/f71a0e8f15c99c805ec4
@@ -178,41 +172,43 @@ class SkeletonContainerGenerator:
             # TODO: This feels like a bit of a hack, improve...
             seqlist = "".join(seqlist).replace(" ", "").split("'")
 
-        ns = ""
+        namespace = ""
 
-        for i in range(len(seqlist)):
+        for idx, _ in enumerate(seqlist):
             # split assumes a space if starts/terminates with delimiter
             # even number of single-quotes means every-other character needs
             # converting no delimiter no split...
-            if i % 2 != 0:
-                ns += "".join([hex(ord(x))[2:] for x in seqlist[i]])
+            if idx % 2 != 0:
+                namespace += "".join([hex(ord(x))[2:] for x in seqlist[idx]])
             else:
                 # IF example:
                 # ['', 'office:version=', ' [22 27] ', '1.0', ' [22 27]']
-                if seqlist[i].find("[") != -1 and seqlist[i].find("]") != -1:
-                    vallist = seqlist[i].replace("[", "").replace("]", "").split(" ")
-                    for v in vallist:
-                        if v != "":
-                            ns += v
+                if seqlist[idx].find("[") != -1 and seqlist[idx].find("]") != -1:
+                    vallist = seqlist[idx].replace("[", "").replace("]", "").split(" ")
+                    for val in vallist:
+                        if val != "":
+                            namespace += val
                             break
-                else:
-                    ns += seqlist[i]
+                    continue
+                namespace += seqlist[idx]
 
         # workaround for ['6'-'7'] issue
-        if "[" in ns:
-            ns = self.__replaceoptionsyntax__(ns)
+        if "[" in namespace:
+            namespace = self._replaceoptionsyntax(namespace)
 
-        return ns.replace(" ", "")
+        return namespace.replace(" ", "")
 
-    def __parse_xml__(self, xmlfile):
-        f = open(xmlfile, "rb")
+    @staticmethod
+    def _parse_xml(xml_file):
+        """Open the given XML file and return root object to the caller.
+        """
         try:
-            tree = etree.parse(f)
-            f.close()
-            return tree.getroot()
+            with open(xml_file, "rb") as file:
+                tree = etree.parse(file)
+                return tree.getroot()
         except IOError as err:
-            logging.error("IO error: {}".format(err))
-            f.close()
+            logging.error("IO error: %s in File: %s", err, xml_file)
+            raise err
 
     def mapcontaineridstopuids(self, containertree):
         """Create a dictionary of puids based on ID."""
@@ -227,9 +223,9 @@ class SkeletonContainerGenerator:
         dupes_tmp = []
         dupes = []
 
-        for i, y in enumerate(formatmappings.iter()):
-            sigid = y.get("signatureId")
-            puid = y.get("Puid")
+        for _, mapping in enumerate(formatmappings.iter()):
+            sigid = mapping.get("signatureId")
+            puid = mapping.get("Puid")
             if sigid not in dupes_tmp:
                 dupes_tmp.append(sigid)
             else:
@@ -246,25 +242,25 @@ class SkeletonContainerGenerator:
 
         return container_id_to_puid_map
 
-    def removeinvalidpuidsfromextmapping(self, puiddict):
+    def removeinvalidpuidsfromextmapping(self, puid_dict):
         """Non-existent puids might exist in signature file."""
-        puiddict_tmp = {}
-        for p in puiddict:
-            if puiddict[p] == "notfound":
-                self.invalidpuids.append(p)
+        puid_dict_tmp = {}
+        for puid in puid_dict:
+            if puid_dict[puid] == "notfound":
+                self.invalidpuids.append(puid)
                 logging.error(
-                    "PUID values not found in standard signature file: {}".format(p)
+                    "PUID values not found in standard signature file: %s", puid
                 )
                 continue
-            puiddict_tmp[p] = puiddict[p]
-        return puiddict_tmp
+            puid_dict_tmp[puid] = puid_dict[puid]
+        return puid_dict_tmp
 
     def removeinvalidpuidsfromidpuidmapping(self, puid_id_map):
         """Non-existent puids might exist in signature file."""
         for invalidpuid in self.invalidpuids:
-            for id in puid_id_map:
-                if puid_id_map[id] == invalidpuid:
-                    del puid_id_map[id]
+            for id_ in puid_id_map:
+                if puid_id_map[id_] == invalidpuid:
+                    del puid_id_map[id_]
                     self.removeinvalidpuidsfromidpuidmapping(puid_id_map)
                     break
         return puid_id_map
@@ -272,16 +268,20 @@ class SkeletonContainerGenerator:
     def createcontainerfilenamedict(self, container_id_to_puid_map):
         """Create a dictionary filenames to use beased on ID."""
         puid_list = container_id_to_puid_map.values()
-        idfilenamedict = {}
-        StandardSignatureFileHandler = DroidStandardSigFileClass(self.standardsig)
-        puidmapping = StandardSignatureFileHandler.retrieve_ext_list(puid_list)
+        id_filename_dict = {}
+        std_signature_file_handler = DroidStandardSigFileClass(self.standardsig)
+        puidmapping = std_signature_file_handler.retrieve_ext_list(puid_list)
         puidmapping = self.removeinvalidpuidsfromextmapping(puidmapping)
         if len(self.invalidpuids) > 0:
             container_id_to_puid_map = self.removeinvalidpuidsfromidpuidmapping(
                 container_id_to_puid_map
             )
 
-        duplicate_list = [x for x, y in collections.Counter(puid_list).items() if y > 1]
+        duplicate_list = [
+            duplicate
+            for duplicate, val in collections.Counter(puid_list).items()
+            if val > 1
+        ]
 
         # swap keys so we can access dict via puid value
         puid2idmapping = dict(
@@ -293,28 +293,30 @@ class SkeletonContainerGenerator:
         # If we have duplicate PUIDs handle these first and remove from
         # lists. Duplicate puids can be written with different IDs,
         # duplicate IDs can't.
-        for d in duplicate_list:
-            for id in container_id_to_puid_map:
-                if container_id_to_puid_map[id] == d:
-                    fmtid = id
-                    fmt = container_id_to_puid_map[id]
-                    idfilenamedict[fmtid] = "{}-container-signature-id-{}.{}".format(
-                        fmt.replace("/", "-"),
-                        fmtid,
-                        puidmapping[container_id_to_puid_map[id]],
-                    )
-                    container_id_to_puid_map[id] = "done"
-
-        # Generate filename: fmt-x-sig-id-xxxx.ext
-        for x in puid2idmapping:
-            if x in puidmapping:
-                fmtid = puid2idmapping[x]
-                fmt = x
-                idfilenamedict[fmtid] = "{}-container-signature-id-{}.{}".format(
-                    fmt.replace("/", "-"), fmtid, puidmapping[x]
+        for duplicate in duplicate_list:
+            for id_ in container_id_to_puid_map:
+                if container_id_to_puid_map[id_] != duplicate:
+                    continue
+                fmtid = id_
+                fmt = container_id_to_puid_map[id_]
+                id_filename_dict[fmtid] = "{}-container-signature-id_-{}.{}".format(
+                    fmt.replace("/", "-"),
+                    fmtid,
+                    puidmapping[container_id_to_puid_map[id_]],
                 )
+                container_id_to_puid_map[id_] = "done"
 
-        return idfilenamedict
+        # Generate filename, e.g. fmt-x-sig-id_-xxxx.ext
+        for puid in puid2idmapping:
+            if puid not in puidmapping:
+                continue
+            fmtid = puid2idmapping[puid]
+            fmt = puid
+            id_filename_dict[fmtid] = "{}-container-signature-id_-{}.{}".format(
+                fmt.replace("/", "-"), fmtid, puidmapping[puid]
+            )
+
+        return id_filename_dict
 
     def packagezipcontainer(self, containerfilename):
         """Package up the contents we need in our zip."""
@@ -342,14 +344,16 @@ class SkeletonContainerGenerator:
 
     def packageole2container(self, containerfilename):
         fname = os.path.join(self.skeletondebugfolder, containerfilename)
-        if self.java:
-            ole2success = self.olewrite.writeContainer(
-                fname, self.ole2folder, containerfilename
-            )
-            if ole2success:
-                self.ole2written += 1
-            else:
-                self.notwritten.append(containerfilename)
+        if not java:
+            return
+        ole2success = self.ole_write.writeContainer(
+            fname, self.ole2folder, containerfilename
+        )
+        if ole2success:
+            self.ole2written += 1
+            return
+        self.notwritten.append(containerfilename)
+        return
 
     def containersigfile(self, containertree, filenamedict):
         for topelements in iter(containertree):
@@ -363,7 +367,7 @@ class SkeletonContainerGenerator:
                     # TODO: Use container description?
                     _ = container.find("Description")
 
-                    cf = None
+                    container_file = None
                     filetowrite = None
 
                     # TODO: Bug filtering too many filenames/ids out,
@@ -374,36 +378,36 @@ class SkeletonContainerGenerator:
                     containerfilename = filenamedict[containerid]
 
                     files = container.findall("Files/File")
-                    for f in files:
-                        path = f.find("Path")
+                    for file in files:
+                        path = file.find("Path")
                         # E.g. ID 4060 Microsoft Project 2007 OLE2 has
                         # empty inner filename.
                         # E.g. ID 10000 has directory encoded in path.
                         if path is None:
                             # Q. if path is none, do we still need to make
                             # a file pointer..?
-                            cf = self.handlecontainersignaturefilepaths(
+                            container_file = self.handlecontainersignaturefilepaths(
                                 None, containerfilename
                             )
                         else:
-                            cf = self.handlecontainersignaturefilepaths(
+                            container_file = self.handlecontainersignaturefilepaths(
                                 path.text, containerfilename
                             )
-                        if cf:
-                            binarysigs = f.find("BinarySignatures")
+                        if container_file:
+                            binarysigs = file.find("BinarySignatures")
                             if binarysigs is None:
-                                cf.write(
+                                container_file.write(
                                     "File empty. Data written by Skeleton Generator."
                                 )
-                                cf.close()
+                                container_file.close()
                             else:
-                                if cf is not None:
+                                if container_file is not None:
                                     filetowrite = self.handlecontainersignaturefilesigs(
                                         binarysigs, containerfilename
                                     )
-                                if cf is not None:
-                                    cf.write(filetowrite.getvalue())
-                                    cf.close()
+                                if container_file is not None:
+                                    container_file.write(filetowrite.getvalue())
+                                    container_file.close()
 
                     # Print containertype
                     if containertype == "ZIP":
@@ -420,11 +424,9 @@ class SkeletonContainerGenerator:
 
     def handlecontainersignaturefilepaths(self, innerfilename, containerfilename):
         containerfilename = os.path.join(containerfilename)
-        cf = None
+        container_file = None
         if innerfilename is None:
-            logging.error(
-                "Cannot write file without a name: {}".format(containerfilename)
-            )
+            logging.error("Cannot write file without a name: %s", containerfilename)
         else:
             containerfilename = os.path.join(containerfilename, innerfilename)
             self.handlecreatedirectories(containerfilename)
@@ -432,12 +434,13 @@ class SkeletonContainerGenerator:
                 path_ = os.path.join(
                     "skeleton-container-suite", "skeleton-folders", containerfilename
                 )
-                cf = self.handlecreatefile(path_)
+                container_file = open(path_, "wb")
             except IOError:
                 return None
-        return cf
+        return container_file
 
-    def dowriteseq(self, containerfilename, bio, bytes_):
+    @staticmethod
+    def dowriteseq(containerfilename, bio, bytes_):
         for byte in bytes_:
             try:
                 string = map(ord, byte.replace("\n", "").decode("hex"))
@@ -451,58 +454,49 @@ class SkeletonContainerGenerator:
         return bio
 
     def handlecontainersignaturefilesigs(self, innerfile, containerfilename):
-
+        """Handle container file signatures."""
         bio = BytesIO()
         sigcoll = innerfile.findall("InternalSignatureCollection/InternalSignature")
-
         minoff = 0
         maxoff = 0
         offset = 0
         seq = ""
         rightfrag = ""
-
         subs = False
         parts = []
-
         for sigs in sigcoll:
-
             offset = sigs.find("ByteSequence")
             if offset is not None:
                 offset = offset.get("Reference")
             subseq = sigs.findall("ByteSequence/SubSequence")
-            if subseq is not None:
-
-                subs = True
-
-                for sequences in subseq:
-
-                    cp = ContainerPart()
-
-                    pos = sequences.get("Position")
-                    val = sequences.get("SubSeqMinOffset")
-                    minoff = 0 if val is None else val
-                    val = sequences.get("SubSeqMaxOffset")
-                    maxoff = 0 if val is None else val
-                    seq = ""
-                    sequence = sequences.find("Sequence")
-                    if sequence is not None:
-                        seq = sequence.text
-                    rightfrag = sequences.find("RightFragment")
-                    if rightfrag is not None:
-                        rminoff = (
-                            0
-                            if rightfrag.attrib["MinOffset"] is None
-                            else rightfrag.attrib["MinOffset"]
-                        )
-                        seq = "{}{{{}}}{}".format(seq, rminoff, rightfrag.text)
-
-                    cp.seq = self.convertbytesequence(seq)
-                    cp.pos = pos
-                    cp.offset = offset
-                    cp.minoff = minoff
-                    cp.maxoff = maxoff
-
-                    parts.append(cp)
+            if subseq is None:
+                continue
+            subs = True
+            for sequences in subseq:
+                container_part = ContainerPart()
+                pos = sequences.get("Position")
+                val = sequences.get("SubSeqMinOffset")
+                minoff = 0 if val is None else val
+                val = sequences.get("SubSeqMaxOffset")
+                maxoff = 0 if val is None else val
+                seq = ""
+                sequence = sequences.find("Sequence")
+                if sequence is not None:
+                    seq = sequence.text
+                rightfrag = sequences.find("RightFragment")
+                if rightfrag is not None:
+                    rminoff = (
+                        0
+                        if rightfrag.attrib["MinOffset"] is None
+                        else rightfrag.attrib["MinOffset"]
+                    )
+                    seq = "{}{{{}}}{}".format(seq, rminoff, rightfrag.text)
+                container_part.seq = self.convertbytesequence(seq)
+                container_part.pos = pos
+                container_part.offset = offset
+                container_part.minoff = minoff
+                container_part.maxoff = maxoff
+                parts.append(container_part)
 
         # Pre-processing of sequences in signature file.
         if subs is not True:
@@ -510,8 +504,8 @@ class SkeletonContainerGenerator:
         if len(parts) > 1:
             # Need to process the sequences for multiple BOF here.
             bofcount = 0
-            for p in parts:
-                if "BOFoffset" in p.offset:
+            for part in parts:
+                if "BOFoffset" in part.offset:
                     bofcount += 1
             # this is a bit hacky but it's gonna work...
             bio = self._process_bofs_greater_thn_one(bio, parts, containerfilename)
@@ -547,7 +541,7 @@ class SkeletonContainerGenerator:
                 part.maxoff,
                 part.seq,
             )
-        # Collapse sequences into one, using {x-y} syntax to our
+        # Collapse sequences into one, using {n1-n2} syntax to our
         # advantage to then create our skeleton file.
         for idx, part in enumerate(parts):
             if idx == 0:
@@ -574,35 +568,30 @@ class SkeletonContainerGenerator:
         if seq != "":
             sig2map = signature2bytegenerator.Sig2ByteGenerator()
             if offset == "BOFoffset":
-                bytes = sig2map.map_signature(minoff, seq, maxoff, 0)
-                bio = self.dowriteseq(containerfilename, bio, bytes)
+                bytes_ = sig2map.map_signature(minoff, seq, maxoff, 0)
+                bio = self.dowriteseq(containerfilename, bio, bytes_)
             elif offset == "EOFoffset":
-                bytes = sig2map.map_signature(0, seq, minoff, 0)
+                bytes_ = sig2map.map_signature(0, seq, minoff, 0)
                 bio.seek(0, os.SEEK_END)
-                bio = self.dowriteseq(containerfilename, bio, bytes)
+                bio = self.dowriteseq(containerfilename, bio, bytes_)
             else:
                 if int(maxoff) > 0:
                     boffill = (int(maxoff) - int(minoff)) / 2
                     seq = "{{{}}}{}".format(boffill, seq)
-                bytes = sig2map.map_signature(minoff, seq, 0, 0)
+                bytes_ = sig2map.map_signature(minoff, seq, 0, 0)
                 bio.seek(0)
-                bio = self.dowriteseq(containerfilename, bio, bytes)
+                bio = self.dowriteseq(containerfilename, bio, bytes_)
         return bio
 
 
 def skeletonfilegeneration(containersig, standardsig, debug):
     """Primary runner for skeleton suite generation."""
-    if debug.lower() == "true":
-        logging.basicConfig(format=LOGFORMAT, datefmt=DATEFORMAT, level="DEBUG")
-    else:
-        logging.basicConfig(format=LOGFORMAT, datefmt=DATEFORMAT, level="INFO")
     skg = SkeletonContainerGenerator(containersig, standardsig, debug)
     skg.generateskeletonfiles()
     # Jython issues calling class destructor, so called manually,
     # however, this should probably be fixed.
-    if skg.java:
+    if java:
         skg.__del__()
-    sys.exit(0)
 
 
 def main():
@@ -633,21 +622,19 @@ def main():
         "--debug",
         help="Debug mode. Doesn't delete skeleton-folders directory.",
         default=False,
+        action='store_true',
     )
-
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
-
-    # Parse arguments into namespace object to reference later in the script
-    global args
     args = parser.parse_args()
-
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
     if args.con and args.sig:
         skeletonfilegeneration(args.con, args.sig, args.debug)
-    else:
-        parser.print_help()
         sys.exit(1)
+    parser.print_help()
+    sys.exit(1)
 
 
 if __name__ == "__main__":

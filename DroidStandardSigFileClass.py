@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+
+"""Module for collecting information from the DROID signature files.
+"""
+
 from __future__ import print_function, unicode_literals
 
 import logging
@@ -7,14 +11,34 @@ import xml.etree.ElementTree as etree
 
 
 class DroidStandardSigFileClass:
+    """Class encapsulating DROID signature file reading operations."""
+
     def __init__(self, sigfile):
+        """Constructor for the DROID signature file handler class."""
         self.sigfile = open(sigfile, "rb")
 
-    # def __iterate_xml__(self):
+    def __del__(self):
+        """Deconstructor for the class object."""
+        if not self.sigfile.closed:
+            self.sigfile.close()
 
-    # given a puid, return an extension from droid signature file
-    def retrieve_single_ext_text(self, puidtxt):
-        xml_iter = self.__parse_xml__()
+    def _parse_xml(self):
+        """Parse an XML object and return its iterator."""
+        self.sigfile.seek(0)  # Parsing has to begin from seek-point zero
+        try:
+            tree = etree.parse(self.sigfile)
+            root = tree.getroot()
+            return iter(root)
+        except IOError as err:
+            logging.error(err)
+            return None
+        return None
+
+    def retrieve_single_ext_text(self, puid_txt):
+        """Given a PUID return an extension from droid signature file.
+        """
+        xml_iter = self._parse_xml()
+        mapping_text = None
         for topelements in xml_iter:
             if (
                 topelements.tag
@@ -22,19 +46,23 @@ class DroidStandardSigFileClass:
             ):
                 for fileformats in topelements:
                     puid = fileformats.get("PUID")
-                    if puid == puidtxt:
-                        for mapping in fileformats:
-                            if (
-                                mapping.tag
-                                == "{http://www.nationalarchives.gov.uk/pronom/SignatureFile}Extension"
-                            ):
-                                # return first format extension
-                                return mapping.text
-                                break
+                    if puid != puid_txt:
+                        continue
+                    for mapping in fileformats:
+                        if (
+                            mapping.tag
+                            == "{http://www.nationalarchives.gov.uk/pronom/SignatureFile}Extension"
+                        ):
+                            # Return the first file format ext.
+                            mapping_text = mapping.text
+                            break
+        return mapping_text
 
-    # given a list of puids, return all extensions from droid signature file
     def retrieve_ext_list(self, puid_list):
-        xml_iter = self.__parse_xml__()
+        """Given a list of PUIDS, return all extensions from droid
+        signature file.
+        """
+        xml_iter = self._parse_xml()
         puiddict = {}
         for topelements in xml_iter:
             if (
@@ -44,42 +72,23 @@ class DroidStandardSigFileClass:
                 for fileformats in topelements:
                     puid = fileformats.get("PUID")
                     for puids in puid_list:
-                        if puid == puids:
-                            ext = fileformats.find(
-                                "{http://www.nationalarchives.gov.uk/pronom/SignatureFile}Extension"
-                            )
-                            if ext is not None:
-                                # return first format extension
-                                puiddict[puids] = ext.text
-                                break
-                            else:
-                                puiddict[puids] = None
-                                break
-
-            # TODO: consider placement of this check, should it be handled here?
+                        if puids != puid:
+                            continue
+                        ext = fileformats.find(
+                            "{http://www.nationalarchives.gov.uk/pronom/SignatureFile}Extension"
+                        )
+                        if ext is not None:
+                            # Return the first file format extension.
+                            puiddict[puids] = ext.text
+                            break
+                        puiddict[puids] = None
+                        break
             notfound = []
-            for p in puid_list:
-                if p not in puiddict.keys():
-                    if p not in notfound:
-                        notfound.append(p)
-
+            for puid in puid_list:
+                if puid not in puiddict:
+                    if puid not in notfound:
+                        notfound.append(puid)
             if len(notfound) > 0:
-                for p in notfound:
-                    puiddict[p] = "notfound"
-
+                for puid in notfound:
+                    puiddict[puid] = "notfound"
         return puiddict
-
-    def __parse_xml__(self):
-        # parsing has to begin from seekpoint zero
-        self.sigfile.seek(0)
-        try:
-            tree = etree.parse(self.sigfile)
-            root = tree.getroot()
-            return iter(root)
-        except IOError as err:
-            logging.error(err)
-        return
-
-    def __del__(self):
-        if not self.sigfile.closed:
-            self.sigfile.close()

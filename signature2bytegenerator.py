@@ -9,6 +9,8 @@ from __future__ import print_function
 import logging
 import random
 
+FILL_RANDOM = "RAND"
+
 
 class Sig2ByteGenerator:
     """Sig2ByteGenerator encapsulates our byte conversion operations.
@@ -17,27 +19,33 @@ class Sig2ByteGenerator:
     def __init__(self):
         self.component_list = []
         self.open_syntax = ["{", "(", "[", "?", "*"]
-        self.fillbyte = -1
+        self.fillbyte = None
 
     def __del__(self):
         del self.component_list[:]
 
-    def set_fillbyte(self, fillvalue):
+    @staticmethod
+    def set_fillbyte(fillvalue):
         if fillvalue < 0 or fillvalue > 255:
-            global fillbyte
-            fillbyte = "Random"
-        else:
-            fillbyte = fillvalue
-        return fillbyte
+            logging.debug("Fill byte set to RANDOM")
+            fillbyte = FILL_RANDOM
+            return fillbyte
+        return fillvalue
 
     def check_syntax(self, signature):
         for i in self.open_syntax:
             if signature.find(i) > -1:
                 return True
+        return False
 
-    def create_bytes(self, no):
-        for i in range(no):
-            if fillbyte == "Random":
+    def create_bytes(self, number):
+        """Create 'n' bytes.
+
+        :param number: number of bytes to create
+        :return: True when done
+        """
+        for _ in range(number):
+            if self.fillbyte == FILL_RANDOM:
                 self.component_list.append(
                     hex(random.randint(0, 255))
                     .replace("0x", "")
@@ -46,15 +54,14 @@ class Sig2ByteGenerator:
                 )
             else:
                 self.component_list.append(
-                    hex(fillbyte).replace("0x", "").zfill(2).replace("L", "")
+                    hex(self.fillbyte).replace("0x", "").zfill(2).replace("L", "")
                 )
         return True
 
     def process_curly(self, syn):
-
+        """Process sequence with curly brackets."""
         syn = syn.replace("{", "")
         syn = syn.replace("}", "")
-
         if syn.find("-") == -1:
             self.create_bytes(int(syn))
         else:
@@ -67,29 +74,24 @@ class Sig2ByteGenerator:
                 self.create_bytes(val)
 
     def process_square(self, syn):
-
+        """Process sequence with square brackets."""
         if "-" in syn:
-            logging.debug("Replacing dash '-' in {}".format(syn))
+            logging.debug("Replacing dash '-' in '%s'", syn)
             syn = syn.replace("-", ":")
-
         syn = syn.replace("[", "")
         syn = syn.replace("]", "")
-
         # convert to ints and find mean value in range
         if syn.find(":") > -1:
             self.sqr_colon(syn)
-
-            # convert to ints and -1 so don't equal hex in not clause
+        # convert to ints and -1 so don't equal hex in not clause
         elif syn.find("!") > -1:
             self.sqr_not(syn)
 
     def process_mask(self, syn, inverted=False):
-
+        """Process sequence with mask."""
         syn = syn.replace("[", "")
         syn = syn.replace("]", "")
-
         val = 0
-
         # negate first, else, mask...
         if "!&" in syn and inverted is True:
             syn = syn.replace("!&", "")
@@ -101,7 +103,6 @@ class Sig2ByteGenerator:
             byte = int(syn, 16)
             mask = byte & 255
             val = mask
-
         self.component_list.append(hex(val).replace("0x", "").zfill(2).replace("L", ""))
 
     def sqr_colon(self, syn):
@@ -115,32 +116,27 @@ class Sig2ByteGenerator:
 
     def sqr_not(self, syn):
         syn = syn.replace("!", "")
-        s = map(ord, syn.decode("hex"))
-        i = 0
-        for h in s:  # this function could be seriously busted - check
-            if s[i] == 0:
-                s[i] = s[i] + 1
+        seq = list(map(ord, syn.decode("hex")))
+        for idx, _ in enumerate(seq):
+            if seq[idx] == 0:
+                seq[idx] = seq[idx] + 1
             else:
-                s[i] = s[i] - 1
+                seq[idx] = seq[idx] - 1
             self.component_list.append(
-                hex(s[i]).replace("0x", "").zfill(2).replace("L", "")
+                hex(seq[idx]).replace("0x", "").zfill(2).replace("L", "")
             )
-            i += 1
 
     def process_thesis(self, syn):
         syn = syn.replace("(", "").replace(")", "")
-
         index = syn.find("|")
         syn = syn[0:index]
-
-        if syn.find("[") == -1:
-            s = map(ord, syn.decode("hex"))
-            for i in range(s.__len__()):
-                self.component_list.append(
-                    hex(s[i]).replace("0x", "").zfill(2).replace("L", "")
-                )
-        else:
+        if syn.find("[") != -1:
             self.process_square(syn)
+        seq = list(map(ord, syn.decode("hex")))
+        for idx in range(seq.__len__()):
+            self.component_list.append(
+                hex(seq[idx]).replace("0x", "").zfill(2).replace("L", "")
+            )
 
     def detailed_check(self, signature):
         index = 0
@@ -192,31 +188,27 @@ class Sig2ByteGenerator:
         return signature[index + 1 :]
 
     def process_signature(self, signature):
-
-        if self.check_syntax(signature) is True:
-            i = 0
-            for x in signature:
-                if not x.isalnum():  # are all alphanumeric
-                    element = signature[0:i]
-                    if element != "":  # may not be anything to append e.g. '??ab'
-                        self.component_list.append(element)
-                    signature = self.detailed_check(signature[i:])
-                    break
-                i += 1
-            self.process_signature(signature)
-        else:
+        """Process a given signature into byte sequences for writing
+        to file.
+        """
+        if self.check_syntax(signature) is not True:
             self.component_list.append(signature)
-
-    def map_signature(self, bofoffset, signature, eofoffset, fillvalue=-1):
-
-        self.set_fillbyte(fillvalue)
-
-        if bofoffset != "null":
-            self.create_bytes(int(bofoffset))  # dangerous? need to check type?
-
+            return
+        for idx, val in enumerate(signature):
+            if not val.isalnum():  # are all alphanumeric
+                element = signature[0:idx]
+                if element != "":  # may not be anything to append e.g. '??ab'
+                    self.component_list.append(element)
+                signature = self.detailed_check(signature[idx:])
+                break
         self.process_signature(signature)
 
+    def map_signature(self, bofoffset, signature, eofoffset, fillvalue=-1):
+        """Map signature to byte sequences."""
+        self.fillbyte = self.set_fillbyte(fillvalue)
+        if bofoffset != "null":
+            self.create_bytes(int(bofoffset))  # dangerous? need to check type?
+        self.process_signature(signature)
         if eofoffset != "null":
             self.create_bytes(int(eofoffset))
-
         return self.component_list
