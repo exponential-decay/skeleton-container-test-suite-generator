@@ -1,8 +1,8 @@
 # skeleton-container-test-suite-generator
 
-Amendment to the Skeleton Test Suite Generator, creates OLE2 and ZIP based
-container files invoking the container matching mechanisms in The National
-Archive, UK's DROID file format identification tool.
+Amendment to the [Skeleton Test Suite Generator][SKEL-1], creates OLE2 and ZIP
+based container files invoking the container matching mechanisms in The
+NationalvArchive, UK's DROID file format identification tool.
 
 ## Jython
 
@@ -23,19 +23,27 @@ package seems to be the problem. If you manage to make it work, let me know!
 ## Python
 
 Running the application in Python means that you can only output ZIP based
-container objects.
+container objects. Jython is needed to output OLE2.
 
     python skeletoncontainergenerator.py \
       --con container-signature-20140717.xml
       --sig DROID_SignatureFile_V77.xml
 
+## Debug
+
+In either mode the `--debug` flag will let you see the files being written to
+container objects. A folder will be left over after processing called
+`skeleton-folders`.
+
 ## Results
 
 The results will currently tell you how many objects should have been output,
-plus a rough summary of the numbers actually output. To be improved somewhat.
+plus a summary of the numbers actually output.
 
-Container objects output should match 1:1 in DROID with all current signatures
-at time of writing.
+## Archive
+
+All skeleton file suites should eventually be available in the (unofficial)
+PRONOM archive: [here][ARCH-1].
 
 ## License
 
@@ -59,3 +67,6 @@ freely, subject to the following restrictions:
 
    3. This notice may not be removed or altered from any source
    distribution.
+
+[SKEL-1]: https://github.com/exponential-decay/skeleton-test-suite-generator
+[ARCH-1]: https://github.com/exponential-decay/pronom-archive-and-skeleton-test-suite
