@@ -37,7 +37,7 @@ class WriteOLE2Containers:
         # Triplet ([Folder], [sub-dirs], [files]).
         for folder, subs, files in os.walk(containerfoldername):
             if subs != []:
-                logging.error("Cannot yet write directories using this utility")
+                logging.error("Cannot yet write directories using this utility: %s", containerfoldername)
                 break
             for file_ in files:
                 fin = FileInputStream(os.path.join(folder, file_))
