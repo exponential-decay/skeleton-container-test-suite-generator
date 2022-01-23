@@ -299,7 +299,7 @@ class SkeletonContainerGenerator:
                     continue
                 fmtid = id_
                 fmt = container_id_to_puid_map[id_]
-                id_filename_dict[fmtid] = "{}-container-signature-id_-{}.{}".format(
+                id_filename_dict[fmtid] = "{}-container-signature-id-{}.{}".format(
                     fmt.replace("/", "-"),
                     fmtid,
                     puidmapping[container_id_to_puid_map[id_]],
@@ -312,7 +312,7 @@ class SkeletonContainerGenerator:
                 continue
             fmtid = puid2idmapping[puid]
             fmt = puid
-            id_filename_dict[fmtid] = "{}-container-signature-id_-{}.{}".format(
+            id_filename_dict[fmtid] = "{}-container-signature-id-{}.{}".format(
                 fmt.replace("/", "-"), fmtid, puidmapping[puid]
             )
 
