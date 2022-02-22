@@ -634,6 +634,7 @@ def main():
         skeletonfilegeneration(args.con, args.sig, args.debug)
         sys.exit(1)
     parser.print_help()
+    sys.exit(1)
 
 
 if __name__ == "__main__":
