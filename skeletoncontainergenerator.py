@@ -632,9 +632,9 @@ def main():
         logging.getLogger().setLevel(logging.DEBUG)
     if args.con and args.sig:
         skeletonfilegeneration(args.con, args.sig, args.debug)
-        sys.exit(1)
+        sys.exit(0)
     parser.print_help()
-    sys.exit(1)
+    sys.exit(0)
 
 
 if __name__ == "__main__":
